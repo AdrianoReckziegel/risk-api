@@ -1,0 +1,11 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: risk-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: riskdb
+      POSTGRES_USER: riskuser
+      POSTGRES_PASSWORD: riskpass
+    ports:
+      - "5463-5432"
