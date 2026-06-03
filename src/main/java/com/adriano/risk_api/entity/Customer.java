@@ -32,6 +32,4 @@ public class Customer {
 
     private Instant createdAt = Instant.now();
 
-
-
 }

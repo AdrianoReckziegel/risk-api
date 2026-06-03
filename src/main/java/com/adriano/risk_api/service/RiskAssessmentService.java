@@ -17,4 +17,5 @@ public interface RiskAssessmentService {
     RiskAssessment updateAssessment(Long id, RiskAssessment updatedAssessment);
 
     void deleteAssessment(Long id);
+
 }
