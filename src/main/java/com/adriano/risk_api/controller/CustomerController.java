@@ -7,6 +7,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/customers")
 @RequiredArgsConstructor
@@ -27,6 +29,16 @@ public class CustomerController {
     @GetMapping("/{id}")
     public CustomerResponse getById(@PathVariable Long id) {
         return service.getById(id);
+    }
+
+    @GetMapping
+    public List<CustomerResponse> getAll() {
+        return service.getAll();
+    }
+
+    @GetMapping("/external/{externalId}")
+    public CustomerResponse getByExternalId(@PathVariable String externalId) {
+        return service.getByExternalId(externalId);
     }
     
 }

@@ -5,6 +5,7 @@ import com.adriano.risk_api.dto.CustomerResponse;
 import com.adriano.risk_api.entity.Customer;
 import com.adriano.risk_api.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -31,6 +32,22 @@ public class CustomerService {
 
         Customer customer = repository.findById(id).orElseThrow(() -> new RuntimeException(
                 "Customer not found: " + id));
+
+        return toResponse(customer);
+    }
+
+    public List<CustomerResponse> getAll(){
+        return repository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public CustomerResponse getByExternalId(String externalId) {
+
+        Customer customer = repository.findByExternalId(externalId)
+                .orElseThrow(() ->
+                        new RuntimeException("Customer not found"));
 
         return toResponse(customer);
     }
