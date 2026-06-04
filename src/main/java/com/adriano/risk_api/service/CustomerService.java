@@ -24,14 +24,7 @@ public class CustomerService {
 
         Customer saved = repository.save(customer);
 
-        return CustomerResponse.builder()
-                .id(saved.getId())
-                .externalId(saved.getExternalId())
-                .name(saved.getName())
-                .birthDate(saved.getBirthDate())
-                .email(saved.getEmail())
-                .createdAt(saved.getCreatedAt())
-                .build();
+        return toResponse(saved);
     }
 
     public CustomerResponse getById(Long id){
@@ -39,6 +32,11 @@ public class CustomerService {
         Customer customer = repository.findById(id).orElseThrow(() -> new RuntimeException(
                 "Customer not found: " + id));
 
+        return toResponse(customer);
+    }
+
+
+    private CustomerResponse toResponse(Customer customer) {
         return CustomerResponse.builder()
                 .id(customer.getId())
                 .externalId(customer.getExternalId())
