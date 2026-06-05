@@ -3,6 +3,7 @@ package com.adriano.risk_api.service;
 import com.adriano.risk_api.dto.CustomerRequest;
 import com.adriano.risk_api.dto.CustomerResponse;
 import com.adriano.risk_api.entity.Customer;
+import com.adriano.risk_api.exception.CustomerNotFoundException;
 import com.adriano.risk_api.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import java.util.List;
@@ -30,8 +31,9 @@ public class CustomerService {
 
     public CustomerResponse getById(Long id){
 
-        Customer customer = repository.findById(id).orElseThrow(() -> new RuntimeException(
-                "Customer not found: " + id));
+        Customer customer = repository.findById(id)
+                .orElseThrow(() ->
+                        new CustomerNotFoundException(id));
 
         return toResponse(customer);
     }
@@ -47,11 +49,10 @@ public class CustomerService {
 
         Customer customer = repository.findByExternalId(externalId)
                 .orElseThrow(() ->
-                        new RuntimeException("Customer not found"));
+                        new CustomerNotFoundException(externalId));
 
         return toResponse(customer);
     }
-
 
     private CustomerResponse toResponse(Customer customer) {
         return CustomerResponse.builder()
