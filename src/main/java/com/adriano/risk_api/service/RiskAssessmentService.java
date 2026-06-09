@@ -1,20 +1,21 @@
 package com.adriano.risk_api.service;
 
+import com.adriano.risk_api.dto.RiskAssessmentResponse;
 import com.adriano.risk_api.entity.RiskAssessment;
 import java.util.List;
 import java.util.Optional;
 
 public interface RiskAssessmentService {
 
-    RiskAssessment createAssessment(RiskAssessment riskAssessment);
+    RiskAssessmentResponse createAssessment(RiskAssessment riskAssessment);
 
-    Optional<RiskAssessment> getById(Long id);
+    RiskAssessmentResponse getById(Long id);
 
-    List<RiskAssessment> getAll();
+    List<RiskAssessmentResponse> getAll();
 
-    List<RiskAssessment> getByCustomerId(Long customerId);
+    List<RiskAssessmentResponse> getByCustomerId(Long customerId);
 
-    RiskAssessment updateAssessment(Long id, RiskAssessment updatedAssessment);
+    RiskAssessmentResponse updateAssessment(Long id, RiskAssessment updatedAssessment);
 
     void deleteAssessment(Long id);
 

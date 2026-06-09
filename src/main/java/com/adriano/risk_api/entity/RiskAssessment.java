@@ -37,11 +37,11 @@ public class RiskAssessment {
     @Column(columnDefinition = "TEXT")
     private String inputSnapshot;
 
-    enum RiskLevel {
+    public enum RiskLevel {
         LOW, MEDIUM, HIGH
     }
 
-    enum Decision {
+    public enum Decision {
         APPROVED, REJECTED, REVIEW
     }
 }
