@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -31,5 +32,9 @@ public class Customer {
     private String email;
 
     private Instant createdAt = Instant.now();
+
+    private Integer creditScore;
+
+    private BigDecimal annualIncome;
 
 }
