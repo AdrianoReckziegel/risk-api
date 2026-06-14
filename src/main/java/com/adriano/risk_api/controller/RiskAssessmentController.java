@@ -1,26 +1,25 @@
 package com.adriano.risk_api.controller;
 
 import com.adriano.risk_api.dto.RiskAssessmentResponse;
-import com.adriano.risk_api.entity.RiskAssessment;
 import com.adriano.risk_api.service.RiskAssessmentService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/risk-assessments")
-@RequiredArgsConstructor
-
 public class RiskAssessmentController {
+    private final RiskAssessmentService riskAssessmentService;
 
-    private final RiskAssessmentService service;
-
-    @PostMapping
-    public RiskAssessmentResponse create(@RequestBody RiskAssessment risk) {
-        return service.createAssessment(risk);
+    public RiskAssessmentController(RiskAssessmentService riskAssessmentService) {
+        this.riskAssessmentService = riskAssessmentService;
     }
 
-    @GetMapping("/{id}")
-    public RiskAssessmentResponse getById(@PathVariable Long id) {
-        return service.getById(id);
+    @PostMapping("/calculate/{customerId}")
+    public ResponseEntity<RiskAssessmentResponse> calculate(@PathVariable Long customerId) {
+
+        RiskAssessmentResponse response =
+                riskAssessmentService.calculateAssessment(customerId);
+
+        return ResponseEntity.ok(response);
     }
 }

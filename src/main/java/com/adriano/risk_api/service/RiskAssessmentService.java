@@ -3,7 +3,6 @@ package com.adriano.risk_api.service;
 import com.adriano.risk_api.dto.RiskAssessmentResponse;
 import com.adriano.risk_api.entity.RiskAssessment;
 import java.util.List;
-import java.util.Optional;
 
 public interface RiskAssessmentService {
 
@@ -18,5 +17,7 @@ public interface RiskAssessmentService {
     RiskAssessmentResponse updateAssessment(Long id, RiskAssessment updatedAssessment);
 
     void deleteAssessment(Long id);
+
+    RiskAssessmentResponse calculateAssessment(Long customerId);
 
 }
