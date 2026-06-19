@@ -15,6 +15,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleCustomerNotFound(
             CustomerNotFoundException ex) {
 
+        ex.printStackTrace(); // add this
+
         ErrorResponse response = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .status(HttpStatus.NOT_FOUND.value())

@@ -8,9 +8,22 @@ services:
       POSTGRES_USER: riskuser
       POSTGRES_PASSWORD: riskpass
     ports:
-      - "5463:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: risk-api
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/riskdb
+      SPRING_DATASOURCE_USERNAME: riskuser
+      SPRING_DATASOURCE_PASSWORD: riskpass
 
 volumes:
   postgres_data:
