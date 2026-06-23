@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.math.BigDecimal;
 
 @Data
 @Builder
@@ -21,5 +22,9 @@ public class CustomerResponse {
     private String email;
 
     private Instant createdAt;
+
+    private Integer creditScore;
+
+    private BigDecimal annualIncome;
 
 }

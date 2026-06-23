@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 
 @Data
 public class CustomerRequest {
@@ -17,5 +18,10 @@ public class CustomerRequest {
     private LocalDate birthDate;
 
     private String email;
+
+    // Manually provided fields
+    private Integer creditScore;
+
+    private BigDecimal annualIncome;
 
 }

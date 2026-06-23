@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: riskuser
       POSTGRES_PASSWORD: riskpass
     ports:
-      - "5432:5432"
+      - "5463:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

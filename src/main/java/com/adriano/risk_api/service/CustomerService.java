@@ -23,6 +23,9 @@ public class CustomerService {
         customer.setName(request.getName());
         customer.setBirthDate(request.getBirthDate());
         customer.setEmail(request.getEmail());
+        // map manually provided fields
+        customer.setCreditScore(request.getCreditScore());
+        customer.setAnnualIncome(request.getAnnualIncome());
 
         Customer saved = repository.save(customer);
 
@@ -62,6 +65,8 @@ public class CustomerService {
                 .birthDate(customer.getBirthDate())
                 .email(customer.getEmail())
                 .createdAt(customer.getCreatedAt())
+                .creditScore(customer.getCreditScore())
+                .annualIncome(customer.getAnnualIncome())
                 .build();
     }
 }
