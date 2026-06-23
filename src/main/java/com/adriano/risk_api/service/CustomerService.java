@@ -69,4 +69,31 @@ public class CustomerService {
                 .annualIncome(customer.getAnnualIncome())
                 .build();
     }
+
+    public CustomerResponse update(Long id, CustomerRequest request) {
+
+        Customer customer = repository.findById(id)
+                .orElseThrow(() ->
+                        new CustomerNotFoundException(id));
+
+        customer.setExternalId(request.getExternalId());
+        customer.setName(request.getName());
+        customer.setBirthDate(request.getBirthDate());
+        customer.setEmail(request.getEmail());
+        customer.setCreditScore(request.getCreditScore());
+        customer.setAnnualIncome(request.getAnnualIncome());
+
+        Customer saved = repository.save(customer);
+
+        return toResponse(saved);
+    }
+
+    public void delete(Long id) {
+
+        Customer customer = repository.findById(id)
+                .orElseThrow(() ->
+                        new CustomerNotFoundException(id));
+
+        repository.delete(customer);
+    }
 }
