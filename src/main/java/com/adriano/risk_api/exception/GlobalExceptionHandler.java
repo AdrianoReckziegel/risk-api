@@ -1,5 +1,6 @@
 package com.adriano.risk_api.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -32,6 +33,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(
             MethodArgumentNotValidException ex) {
+
+        ex.printStackTrace(); // add this
         
         String message = ex.getBindingResult()
                 .getFieldErrors()
@@ -53,9 +56,33 @@ public class GlobalExceptionHandler {
                 .body(response);
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleFkViolation(DataIntegrityViolationException ex) {
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error(HttpStatus.CONFLICT.getReasonPhrase())
+                .message("Cannot delete customer with existing risk assessments")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(RiskAssessmentNotFoundException.class)
+    public ResponseEntity<String> handleNotFound(RiskAssessmentNotFoundException ex) {
+
+        ex.printStackTrace(); // add this
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex) {
+
+        ex.printStackTrace(); // add this
 
         String message = "An unexpected error occurred";
 
@@ -69,10 +96,5 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(response);
-    }
-
-    @ExceptionHandler(RiskAssessmentNotFoundException.class)
-    public ResponseEntity<String> handleNotFound(RiskAssessmentNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 }
