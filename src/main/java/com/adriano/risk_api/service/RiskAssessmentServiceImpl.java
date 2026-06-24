@@ -89,15 +89,13 @@ public class RiskAssessmentServiceImpl implements RiskAssessmentService{
     @Override
     public List<RiskAssessmentResponse> getByCustomerId(Long customerId) {
 
-        return riskAssessmentRepository.findByCustomerId(customerId).stream()
-                .map(a -> RiskAssessmentResponse.builder()
-                        .id(a.getId())
-                        .customerId(a.getCustomer().getId())
-                        .riskScore(a.getRiskScore())
-                        .riskLevel(a.getRiskLevel().name())
-                        .createdAt(a.getCreatedAt())
-                        .build()
-                )
+        customerRepository.findById(customerId)
+                .orElseThrow(() ->
+                        new CustomerNotFoundException(customerId));
+
+        return riskAssessmentRepository.findByCustomerId(customerId)
+                .stream()
+                .map(this::toResponse)
                 .toList();
     }
 
