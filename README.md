@@ -1,8 +1,6 @@
 # Risk Assessment API
 
-A Spring Boot REST API that simulates customer risk assessment for financial institutions.
-
-The application allows customer management, execution of risk assessments, and calculation of a configurable risk level based on customer financial information. The project was developed as a demonstration of modern Java backend development practices, emphasizing clean architecture, maintainability, validation, and business rule implementation.
+Risk Assessment API is an enterprise-style backend service that simulates customer risk evaluation workflows commonly found in financial institutions. The project demonstrates modern Java development practices, clean architecture, RESTful API design, automated testing, containerization, and API documentation.
 
 ---
 
