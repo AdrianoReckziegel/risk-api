@@ -1,6 +1,6 @@
 package com.adriano.risk_api.dto;
 
-import com.adriano.risk_api.entity.RiskAssessment;
+import com.adriano.risk_api.entity.RiskLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -10,6 +10,6 @@ public class RiskResult {
 
     private Integer score;
 
-    private RiskAssessment.RiskLevel riskLevel;
+    private RiskLevel riskLevel;
 
 }

@@ -3,6 +3,7 @@ package com.adriano.risk_api.service;
 import com.adriano.risk_api.dto.RiskResult;
 import com.adriano.risk_api.entity.Customer;
 import com.adriano.risk_api.entity.RiskAssessment;
+import com.adriano.risk_api.entity.RiskLevel;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,14 +27,14 @@ public class RiskScoringService {
             score += 20;
         }
 
-        RiskAssessment.RiskLevel level;
+        RiskLevel level;
 
         if (score >= 80) {
-            level = RiskAssessment.RiskLevel.LOW;
+            level = RiskLevel.LOW;
         } else if (score >= 50) {
-            level = RiskAssessment.RiskLevel.MEDIUM;
+            level = RiskLevel.MEDIUM;
         } else {
-            level = RiskAssessment.RiskLevel.HIGH;
+            level = RiskLevel.HIGH;
         }
 
         return new RiskResult(score, level);

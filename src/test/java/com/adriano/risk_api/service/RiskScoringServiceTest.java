@@ -2,7 +2,7 @@ package com.adriano.risk_api.service;
 
 import com.adriano.risk_api.dto.RiskResult;
 import com.adriano.risk_api.entity.Customer;
-import com.adriano.risk_api.entity.RiskAssessment;
+import com.adriano.risk_api.entity.RiskLevel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +34,7 @@ class RiskScoringServiceTest {
         RiskResult result = service.calculate(customer);
 
         assertEquals(100, result.getScore());
-        assertEquals(RiskAssessment.RiskLevel.LOW, result.getRiskLevel());
+        assertEquals(RiskLevel.LOW, result.getRiskLevel());
     }
 
     @Test
@@ -45,7 +45,7 @@ class RiskScoringServiceTest {
         RiskResult result = service.calculate(customer);
 
         assertEquals(20, result.getScore());
-        assertEquals(RiskAssessment.RiskLevel.HIGH, result.getRiskLevel());
+        assertEquals(RiskLevel.HIGH, result.getRiskLevel());
     }
 
     @Test
@@ -56,7 +56,7 @@ class RiskScoringServiceTest {
         RiskResult result = service.calculate(customer);
 
         assertEquals(60, result.getScore());
-        assertEquals(RiskAssessment.RiskLevel.MEDIUM, result.getRiskLevel());
+        assertEquals(RiskLevel.MEDIUM, result.getRiskLevel());
     }
 
     @Test
@@ -67,7 +67,7 @@ class RiskScoringServiceTest {
         RiskResult result = service.calculate(customer);
 
         assertEquals(100, result.getScore());
-        assertEquals(RiskAssessment.RiskLevel.LOW, result.getRiskLevel());
+        assertEquals(RiskLevel.LOW, result.getRiskLevel());
     }
 
     @Test
@@ -78,7 +78,7 @@ class RiskScoringServiceTest {
         RiskResult result = service.calculate(customer);
 
         assertEquals(40, result.getScore());
-        assertEquals(RiskAssessment.RiskLevel.HIGH, result.getRiskLevel());
+        assertEquals(RiskLevel.HIGH, result.getRiskLevel());
     }
 
     @Test
@@ -89,7 +89,7 @@ class RiskScoringServiceTest {
         RiskResult result = service.calculate(customer);
 
         assertEquals(100, result.getScore());
-        assertEquals(RiskAssessment.RiskLevel.LOW, result.getRiskLevel());
+        assertEquals(RiskLevel.LOW, result.getRiskLevel());
     }
 
     @Test
@@ -100,6 +100,6 @@ class RiskScoringServiceTest {
         RiskResult result = service.calculate(customer);
 
         assertEquals(40, result.getScore());
-        assertEquals(RiskAssessment.RiskLevel.HIGH, result.getRiskLevel());
+        assertEquals(RiskLevel.HIGH, result.getRiskLevel());
     }
 }
