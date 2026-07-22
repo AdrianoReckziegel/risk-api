@@ -1,6 +1,7 @@
 package com.adriano.risk_api.controller;
 
 import com.adriano.risk_api.dto.LoginRequest;
+import com.adriano.risk_api.dto.LoginResponse;
 import com.adriano.risk_api.security.JwtService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,8 +41,7 @@ public class AuthController {
                         (UserDetails) authentication.getPrincipal()
                 );
 
-        return ResponseEntity.ok(
-                "Authentication successful"
-        );
+        return ResponseEntity.ok(new LoginResponse(token));
+
     }
 }
