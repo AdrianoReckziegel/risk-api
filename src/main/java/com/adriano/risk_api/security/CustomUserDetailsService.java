@@ -1,9 +1,7 @@
 package com.adriano.risk_api.security;
 
-import com.adriano.risk_api.entity.User;
 import com.adriano.risk_api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -17,26 +15,13 @@ public class CustomUserDetailsService
     private final UserRepository repository;
 
     @Override
-    public UserDetails loadUserByUsername(
-            String username) {
+    public UserDetails loadUserByUsername(String username) {
 
-        User user = repository
-                .findByUsername(username)
+        return repository.findByUsername(username)
                 .orElseThrow(() ->
                         new UsernameNotFoundException(
                                 "User not found: " + username
                         )
                 );
-
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getUsername())
-                .password(user.getPassword())
-                .authorities(
-                        new SimpleGrantedAuthority(
-                                "ROLE_" +
-                                        user.getRole().name()
-                        )
-                )
-                .build();
     }
 }
