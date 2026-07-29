@@ -10,6 +10,22 @@ jobs:
   build-and-test:
 
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: riskdb
+          POSTGRES_USER: riskuser
+          POSTGRES_PASSWORD: riskpass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U riskuser -d riskdb"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+
 
     steps:
 
@@ -27,6 +43,10 @@ jobs:
         run: chmod +x mvnw
 
       - name: Run tests
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/riskdb
+          SPRING_DATASOURCE_USERNAME: riskuser
+          SPRING_DATASOURCE_PASSWORD: riskpass
         run: ./mvnw test
 
       - name: Build application
