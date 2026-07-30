@@ -51,3 +51,6 @@ jobs:
 
       - name: Build application
         run: ./mvnw package -DskipTests
+
+      - name: Build Docker image
+        run: docker build -t risk-api:ci .
