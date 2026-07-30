@@ -10,6 +10,9 @@ jobs:
   build-and-test:
 
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     services:
       postgres:
         image: postgres:16
@@ -53,4 +56,14 @@ jobs:
         run: ./mvnw package -DskipTests
 
       - name: Build Docker image
-        run: docker build -t risk-api:ci .
+        run: docker build -t risk-api:ci -t ghcr.io/${GITHUB_REPOSITORY,,}:sha-${GITHUB_SHA} -t ghcr.io/${GITHUB_REPOSITORY,,}:latest .
+
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Push Docker image to GHCR
+        if: github.event_name == 'push'
+        run: |
+          docker push ghcr.io/${GITHUB_REPOSITORY,,}:sha-${GITHUB_SHA}
+          docker push ghcr.io/${GITHUB_REPOSITORY,,}:latest
