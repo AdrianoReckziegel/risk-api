@@ -22,14 +22,14 @@ Although simplified, the architecture mirrors common enterprise backend patterns
 
 ## Technology Stack
 
-- Java 21
-- Spring Boot 4
+- Java 17
+- Spring Boot 3
 - Spring Web
 - Spring Data JPA
 - Hibernate
 - Jakarta Validation
 - Maven
-- H2 / SQL Database
+- PostgreSQL
 - JUnit 5
 - Mockito
 
@@ -200,19 +200,26 @@ The objective is to ensure business rules remain reliable as the scoring model e
 
 ---
 
+## Local Container Run
+
+1. Copy `.env.example` to `.env`
+2. Set strong values for `POSTGRES_PASSWORD`, `JWT_SECRET`, and (if enabled) admin credentials
+3. Start the stack:
+
+```bash
+docker compose up --build
+```
+
+API runs on `http://localhost:8080`.
+
+---
+
 ## Future Improvements
 
 Planned enhancements include:
 
-- Authentication with Spring Security
-- Role-based authorization
 - Audit logging
 - Configurable scoring rules
-- Docker deployment
-- PostgreSQL support
-- OpenAPI / Swagger documentation
-- Actuator health endpoints
-- CI/CD pipeline (GitHub Actions)
 - Integration tests using Testcontainers
 
 ---

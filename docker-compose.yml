@@ -4,27 +4,38 @@ services:
     container_name: risk-postgres
     restart: always
     environment:
-      POSTGRES_DB: riskdb
-      POSTGRES_USER: riskuser
-      POSTGRES_PASSWORD: riskpass
+      POSTGRES_DB: ${POSTGRES_DB:-riskdb}
+      POSTGRES_USER: ${POSTGRES_USER:-riskuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-riskpass}
     ports:
       - "5463:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-riskuser} -d ${POSTGRES_DB:-riskdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app:
     build: .
     container_name: risk-api
     restart: always
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/riskdb
-      SPRING_DATASOURCE_USERNAME: riskuser
-      SPRING_DATASOURCE_PASSWORD: riskpass
-      JWT_SECRET: your-production-secret
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-riskdb}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-riskuser}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-riskpass}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-3600000}
+      APP_VERSION: ${APP_VERSION:-1.0.0}
+      APP_BOOTSTRAP_ADMIN_ENABLED: ${APP_BOOTSTRAP_ADMIN_ENABLED:-false}
+      APP_BOOTSTRAP_ADMIN_USERNAME: ${APP_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      APP_BOOTSTRAP_ADMIN_PASSWORD: ${APP_BOOTSTRAP_ADMIN_PASSWORD:-admin123}
 
 volumes:
   postgres_data:
