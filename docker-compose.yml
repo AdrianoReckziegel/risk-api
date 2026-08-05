@@ -24,6 +24,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/riskdb
       SPRING_DATASOURCE_USERNAME: riskuser
       SPRING_DATASOURCE_PASSWORD: riskpass
+      JWT_SECRET: your-production-secret
 
 volumes:
   postgres_data:

@@ -2,11 +2,11 @@ package com.adriano.risk_api.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -17,11 +17,12 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    private static final String SECRET_KEY =
-            "VGhpc0lzQVNlY3JldEtleUZvck15Umlza0FwaVByb2plY3Q=";
+    @Value("${jwt.secret}")
+    private String secretKey;
 
-    private static final long EXPIRATION_TIME =
-            1000 * 60 * 60; // 1 hour
+    @Value("${jwt.expiration}")
+    private long expirationTime;
+
 
     public String generateToken(UserDetails userDetails) {
 
@@ -34,7 +35,7 @@ public class JwtService {
                 .expiration(
                         new Date(
                                 System.currentTimeMillis()
-                                        + EXPIRATION_TIME
+                                        + expirationTime
                         )
                 )
                 .signWith(getSigningKey())
@@ -97,7 +98,7 @@ public class JwtService {
     private SecretKey getSigningKey() {
 
         byte[] keyBytes =
-                Decoders.BASE64.decode(SECRET_KEY);
+                Decoders.BASE64.decode(secretKey);
 
         return Keys.hmacShaKeyFor(keyBytes);
     }
