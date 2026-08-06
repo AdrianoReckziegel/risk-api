@@ -214,6 +214,22 @@ API runs on `http://localhost:8080`.
 
 ---
 
+## Temporary VPS Access (by IP)
+
+If you deploy without a domain, users can access the API directly through your VPS public IP:
+
+- Base URL: `http://<YOUR_VPS_IP>:8080`
+- Health: `http://<YOUR_VPS_IP>:8080/actuator/health`
+- Swagger UI: `http://<YOUR_VPS_IP>:8080/swagger-ui/index.html`
+- OpenAPI JSON: `http://<YOUR_VPS_IP>:8080/v3/api-docs`
+
+Important:
+
+- Ensure port `8080` is open in your VPS firewall/security rules.
+- This is HTTP (no TLS) and should be treated as temporary until a domain + HTTPS is configured.
+
+---
+
 ## Future Improvements
 
 Planned enhancements include:
