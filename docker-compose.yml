@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-riskuser}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-riskpass}
     ports:
-      - "5463:5432"
+      - "127.0.0.1:5463:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -25,7 +25,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-riskdb}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-riskuser}
