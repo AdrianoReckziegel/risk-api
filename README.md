@@ -230,6 +230,31 @@ Important:
 
 ---
 
+## Automatic VPS Deployment (on push to main)
+
+This repository includes GitHub Actions CI/CD. Every push to `main` can deploy automatically to your VPS over SSH.
+
+Required GitHub repository secrets:
+
+- `VPS_HOST` (your VPS IP or hostname)
+- `VPS_PORT` (usually `22`)
+- `VPS_USER` (SSH user)
+- `VPS_SSH_KEY` (private key content for the deploy user)
+- `VPS_APP_PATH` (absolute path to the cloned repo on VPS, example: `/home/your-user/risk-api`)
+
+Deployment flow:
+
+1. CI runs tests and builds the Docker image.
+2. If CI passes on `main`, GitHub Actions connects to the VPS.
+3. It runs `git pull --ff-only origin main` and `docker compose up -d --build --remove-orphans`.
+
+Notes:
+
+- The VPS must already have Docker, Docker Compose, Git, and your `.env` configured.
+- Keep `docker-compose.yml` and `.env` on the VPS in sync with the repository changes.
+
+---
+
 ## Future Improvements
 
 Planned enhancements include:

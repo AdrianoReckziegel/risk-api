@@ -1,4 +1,4 @@
-HELP.md
+﻿HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
@@ -34,3 +34,6 @@ build/
 
 *.log
 .DS_Store
+.env
+src/main/resources/application-local.properties
+

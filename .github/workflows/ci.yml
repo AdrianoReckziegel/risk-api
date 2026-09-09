@@ -67,3 +67,22 @@ jobs:
         run: |
           docker push ghcr.io/${GITHUB_REPOSITORY,,}:sha-${GITHUB_SHA}
           docker push ghcr.io/${GITHUB_REPOSITORY,,}:latest
+
+  deploy-to-vps:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy on VPS via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            set -e
+            cd ${{ secrets.VPS_APP_PATH }}
+            git pull --ff-only origin main
+            docker compose up -d --build --remove-orphans
