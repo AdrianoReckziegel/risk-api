@@ -47,6 +47,7 @@ jobs:
 
       - name: Run tests
         env:
+          SPRING_PROFILES_ACTIVE: test
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/riskdb
           SPRING_DATASOURCE_USERNAME: riskuser
           SPRING_DATASOURCE_PASSWORD: riskpass
