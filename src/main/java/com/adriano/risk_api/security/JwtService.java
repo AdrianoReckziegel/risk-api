@@ -7,6 +7,7 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
+import jakarta.annotation.PostConstruct;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -17,12 +18,18 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    @Value("${jwt.secret}")
+    @Value("${JWT_SECRET}")
     private String secretKey;
 
-    @Value("${jwt.expiration}")
+    @Value("${JWT_EXPIRATION:3600000}")
     private long expirationTime;
 
+    @PostConstruct
+    public void validate() {
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalArgumentException("JWT_SECRET environment variable is not set");
+        }
+    }
 
     public String generateToken(UserDetails userDetails) {
 
