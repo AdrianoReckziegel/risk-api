@@ -50,6 +50,8 @@ jobs:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/riskdb
           SPRING_DATASOURCE_USERNAME: riskuser
           SPRING_DATASOURCE_PASSWORD: riskpass
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRATION: 3600000
         run: ./mvnw test
 
       - name: Build application
