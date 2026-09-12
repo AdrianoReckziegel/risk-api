@@ -37,12 +37,15 @@ services:
       APP_BOOTSTRAP_ADMIN_USERNAME: ${APP_BOOTSTRAP_ADMIN_USERNAME:-admin}
       APP_BOOTSTRAP_ADMIN_PASSWORD: ${APP_BOOTSTRAP_ADMIN_PASSWORD:-admin123}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+    networks:
+      - default
+      - proxy
 
   frontend:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE_URL: http://localhost:8080
+        VITE_API_BASE_URL: https://api.adreck.ca
     container_name: risk-frontend
     restart: always
     depends_on:
@@ -50,7 +53,14 @@ services:
     expose:
       - "80"
     environment:
-      VITE_API_BASE_URL: http://localhost:8080
+      VITE_API_BASE_URL: https://api.adreck.ca
+    networks:
+      - default
+      - proxy
 
 volumes:
   postgres_data:
+
+networks:
+  proxy:
+    external: true

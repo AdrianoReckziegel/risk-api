@@ -214,6 +214,13 @@ API runs on `http://localhost:8080`.
 
 The frontend container listens on the internal Docker network and is meant to be published through your VPS reverse proxy (for example Nginx, Traefik, or Caddy) instead of binding directly to host port `3000`.
 
+If you want the frontend directly reachable on the host for local testing, run it with a temporary override such as:
+
+```bash
+docker compose up --build
+docker compose port frontend 80
+```
+
 ---
 
 ## Temporary VPS Access (by IP)
@@ -254,6 +261,8 @@ Notes:
 
 - The VPS must already have Docker, Docker Compose, Git, and your `.env` configured.
 - Keep `.env` on the VPS updated with the required values. Tracked repository files such as `docker-compose.yml` are overwritten during deploy.
+- The API container is published on `127.0.0.1:8080`. Your VPS reverse proxy for `api.adreck.ca` must forward to `http://127.0.0.1:8080`.
+- The frontend container is not published on a host port. If you want a separate web host such as `app.adreck.ca`, proxy it to the frontend container on the Docker network or add an explicit host port mapping for that environment.
 
 ---
 
