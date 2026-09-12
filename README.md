@@ -204,13 +204,14 @@ The objective is to ensure business rules remain reliable as the scoring model e
 
 1. Copy `.env.example` to `.env`
 2. Set strong values for `POSTGRES_PASSWORD`, `JWT_SECRET`, and (if enabled) admin credentials
-3. Start the stack:
+3. If port `3000` is already in use on your machine or VPS, change `FRONTEND_PORT` in `.env`
+4. Start the stack:
 
 ```bash
 docker compose up --build
 ```
 
-API runs on `http://localhost:8080`.
+API runs on `http://localhost:8080` and the frontend runs on `http://localhost:${FRONTEND_PORT}`.
 
 ---
 
