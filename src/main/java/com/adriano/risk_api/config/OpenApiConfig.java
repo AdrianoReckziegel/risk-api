@@ -5,6 +5,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -12,6 +13,11 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
     private static final String BEARER_SCHEME = "bearerAuth";
+    private final String appVersion;
+
+    public OpenApiConfig(@Value("${info.app.version}") String appVersion) {
+        this.appVersion = appVersion;
+    }
 
     @Bean
     public OpenAPI riskApiOpenAPI() {
@@ -29,7 +35,7 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("Risk Assessment API")
                         .description("API for customer risk assessment and scoring")
-                        .version("1.0"));
+                        .version(appVersion));
     }
 
 
