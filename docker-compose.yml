@@ -47,8 +47,8 @@ services:
     restart: always
     depends_on:
       - app
-    ports:
-      - "127.0.0.1:${FRONTEND_PORT:-3000}:80"
+    expose:
+      - "80"
     environment:
       VITE_API_BASE_URL: http://localhost:8080
 
