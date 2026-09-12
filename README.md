@@ -246,12 +246,12 @@ Deployment flow:
 
 1. CI runs tests and builds the Docker image.
 2. If CI passes on `main`, GitHub Actions connects to the VPS.
-3. It runs `git pull --ff-only origin main` and `docker compose up -d --build --remove-orphans`.
+3. It runs `git fetch origin main`, `git reset --hard origin/main`, and `docker compose up -d --build --remove-orphans`.
 
 Notes:
 
 - The VPS must already have Docker, Docker Compose, Git, and your `.env` configured.
-- Keep `docker-compose.yml` and `.env` on the VPS in sync with the repository changes.
+- Keep `.env` on the VPS updated with the required values. Tracked repository files such as `docker-compose.yml` are overwritten during deploy.
 
 ---
 
