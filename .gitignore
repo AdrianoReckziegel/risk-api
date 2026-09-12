@@ -35,5 +35,8 @@ build/
 *.log
 .DS_Store
 .env
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
 src/main/resources/application-local.properties
 
