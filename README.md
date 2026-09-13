@@ -20,6 +20,14 @@ Although simplified, the architecture mirrors common enterprise backend patterns
 
 ---
 
+## Web Dashboard
+
+The dashboard provides an authenticated view of customers, risk assessment totals, risk-level summaries, and recent outcomes. It is available at [app.adreck.ca](https://app.adreck.ca).
+
+![Risk Assessment Portal login screen](docs/images/frontend-login.png)
+
+---
+
 ## Technology Stack
 
 - Java 17
@@ -214,11 +222,19 @@ API runs on `http://localhost:8080`.
 
 The frontend container listens on the internal Docker network and is meant to be published through your VPS reverse proxy (for example Nginx, Traefik, or Caddy) instead of binding directly to host port `3000`.
 
-If you want the frontend directly reachable on the host for local testing, run it with a temporary override such as:
+For local browser testing, create an untracked `docker-compose.local.yml` file:
 
 ```bash
-docker compose up --build
-docker compose port frontend 80
+services:
+  frontend:
+    ports:
+      - "3000:80"
+```
+
+Then start the stack with:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
 ```
 
 ---
@@ -263,6 +279,23 @@ Notes:
 - Keep `.env` on the VPS updated with the required values. Tracked repository files such as `docker-compose.yml` are overwritten during deploy.
 - The API container is published on `127.0.0.1:8080`. Your VPS reverse proxy for `api.adreck.ca` must forward to `http://127.0.0.1:8080`.
 - The frontend container is not published on a host port. If you want a separate web host such as `app.adreck.ca`, proxy it to the frontend container on the Docker network or add an explicit host port mapping for that environment.
+
+### Nginx Proxy Manager
+
+To publish the frontend with Nginx Proxy Manager (NPM), attach NPM to the same external `proxy` Docker network and create a Proxy Host with these settings:
+
+- Domain name: `app.adreck.ca`
+- Scheme: `http`
+- Forward hostname: `risk-frontend`
+- Forward port: `80`
+
+The frontend calls `https://api.adreck.ca`, so the VPS `.env` must allow the dashboard origin:
+
+```env
+CORS_ALLOWED_ORIGINS=http://localhost,http://127.0.0.1,http://localhost:3000,http://127.0.0.1:3000,http://app.adreck.ca,https://app.adreck.ca
+```
+
+Enable a Let's Encrypt certificate and force SSL in NPM when DNS is ready. Both the HTTP and HTTPS dashboard origins are included above so the API continues working after that change.
 
 ---
 
