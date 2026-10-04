@@ -25,10 +25,16 @@ type LoginResponse = {
   token: string;
 };
 
+type ActiveView = 'dashboard' | 'customers' | 'reports';
+
 type DashboardState = {
   token: string;
   customers: Customer[];
   assessments: RiskAssessment[];
+  currentView: ActiveView;
+  searchQuery: string;
+  editingCustomer: Customer | null;
+  isAddModalOpen: boolean;
 };
 
 const STORAGE_KEY = 'risk-api-token';
@@ -45,6 +51,10 @@ const state: DashboardState = {
   token: localStorage.getItem(STORAGE_KEY) ?? '',
   customers: [],
   assessments: [],
+  currentView: 'dashboard',
+  searchQuery: '',
+  editingCustomer: null,
+  isAddModalOpen: false,
 };
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -96,6 +106,27 @@ function setToken(token: string): void {
   localStorage.removeItem(STORAGE_KEY);
 }
 
+function showToast(message: string, type: 'success' | 'error' = 'success'): void {
+  let container = document.querySelector<HTMLDivElement>('.toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(40px)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
 function formatMoney(value: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -106,6 +137,41 @@ function formatMoney(value: number): string {
 
 function formatRiskLevel(level: string): string {
   return level?.toUpperCase() ?? 'UNKNOWN';
+}
+
+function formatDecision(decision: string): string {
+  return decision?.toUpperCase() ?? '—';
+}
+
+function getScoreBadgeClass(score: number): string {
+  if (score >= 750) return 'score-badge tier-1';
+  if (score >= 650) return 'score-badge tier-2';
+  return 'score-badge tier-3';
+}
+
+function getRiskSummary() {
+  const summary = {
+    low: 0,
+    medium: 0,
+    high: 0,
+    approved: 0,
+    review: 0,
+    rejected: 0,
+  };
+
+  for (const assessment of state.assessments) {
+    const level = formatRiskLevel(assessment.riskLevel);
+    if (level === 'LOW') summary.low += 1;
+    if (level === 'MEDIUM') summary.medium += 1;
+    if (level === 'HIGH') summary.high += 1;
+
+    const decision = assessment.decision?.toUpperCase();
+    if (decision === 'APPROVED') summary.approved += 1;
+    if (decision === 'REVIEW') summary.review += 1;
+    if (decision === 'REJECTED') summary.rejected += 1;
+  }
+
+  return summary;
 }
 
 function renderLogin(): void {
@@ -159,25 +225,518 @@ function renderLogin(): void {
   });
 }
 
-function getRiskSummary() {
-  const summary = {
-    low: 0,
-    medium: 0,
-    high: 0,
-  };
+function renderDashboardView(): string {
+  const summary = getRiskSummary();
 
-  for (const assessment of state.assessments) {
-    const level = formatRiskLevel(assessment.riskLevel);
-    if (level === 'LOW') summary.low += 1;
-    if (level === 'MEDIUM') summary.medium += 1;
-    if (level === 'HIGH') summary.high += 1;
-  }
+  return `
+    <section class="stats-grid">
+      <article class="stat-card accent">
+        <span>Total customers</span>
+        <strong>${state.customers.length}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Assessments</span>
+        <strong>${state.assessments.length}</strong>
+      </article>
+      <article class="stat-card warning">
+        <span>High risk</span>
+        <strong>${summary.high}</strong>
+      </article>
+      <article class="stat-card success">
+        <span>Low risk</span>
+        <strong>${summary.low}</strong>
+      </article>
+    </section>
 
-  return summary;
+    <section class="panel-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Customer list</h3>
+          <span>${state.customers.length} active records</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Score</th>
+                <th>Income</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${state.customers.length === 0 ? `
+                <tr>
+                  <td colspan="4" class="empty-state">No customers yet.</td>
+                </tr>
+              ` : state.customers.slice(0, 8).map((customer) => `
+                <tr>
+                  <td>
+                    <div class="customer-name">${customer.name}</div>
+                    <small>${customer.email} • ${customer.externalId}</small>
+                  </td>
+                  <td><span class="${getScoreBadgeClass(customer.creditScore)}">${customer.creditScore}</span></td>
+                  <td>${formatMoney(customer.annualIncome)}</td>
+                  <td>
+                    <div class="action-cell">
+                      <button class="mini-button secondary" type="button" data-edit-customer-id="${customer.id}">Edit</button>
+                      <button class="mini-button" type="button" data-customer-id="${customer.id}">Assess</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Risk reports</h3>
+          <span>Latest outcomes</span>
+        </div>
+
+        <div class="report-stack">
+          <div class="report-row">
+            <span>Low</span>
+            <div class="bar"><i style="width:${state.assessments.length ? (summary.low / state.assessments.length) * 100 : 0}%"></i></div>
+            <strong>${summary.low}</strong>
+          </div>
+          <div class="report-row">
+            <span>Medium</span>
+            <div class="bar"><i style="width:${state.assessments.length ? (summary.medium / state.assessments.length) * 100 : 0}%"></i></div>
+            <strong>${summary.medium}</strong>
+          </div>
+          <div class="report-row">
+            <span>High</span>
+            <div class="bar"><i style="width:${state.assessments.length ? (summary.high / state.assessments.length) * 100 : 0}%"></i></div>
+            <strong>${summary.high}</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bottom-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Add customer</h3>
+          <span>Create record</span>
+        </div>
+
+        <form id="customer-form" class="stacked-form compact-form">
+          <div class="field-row">
+            <label>
+              <span>Full name</span>
+              <input name="name" placeholder="John Doe" required />
+            </label>
+            <label>
+              <span>External ID</span>
+              <input name="externalId" placeholder="CUST-001" required />
+            </label>
+          </div>
+
+          <div class="field-row">
+            <label>
+              <span>Email</span>
+              <input type="email" name="email" placeholder="john@example.com" required />
+            </label>
+            <label>
+              <span>Birth date</span>
+              <input type="date" name="birthDate" required />
+            </label>
+          </div>
+
+          <div class="field-row">
+            <label>
+              <span>Credit score (300 - 850)</span>
+              <input type="number" name="creditScore" min="300" max="850" placeholder="720" required />
+            </label>
+            <label>
+              <span>Annual income ($)</span>
+              <input type="number" name="annualIncome" min="0" step="1000" placeholder="85000" required />
+            </label>
+          </div>
+
+          <button type="submit" class="primary-button">Create customer</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Recent assessments</h3>
+          <span>Decision stream</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Risk</th>
+                <th>Decision</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${state.assessments.length === 0 ? `
+                <tr>
+                  <td colspan="3" class="empty-state">No assessments yet.</td>
+                </tr>
+              ` : state.assessments.slice(0, 6).map((assessment) => {
+                const customer = state.customers.find((item) => item.id === assessment.customerId);
+                const dec = formatDecision(assessment.decision);
+                return `
+                  <tr>
+                    <td>${customer?.name ?? `Customer #${assessment.customerId}`}</td>
+                    <td><span class="risk-pill ${assessment.riskLevel.toLowerCase()}">${formatRiskLevel(assessment.riskLevel)}</span></td>
+                    <td><span class="decision-pill ${(assessment.decision || '').toLowerCase()}">${dec}</span></td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  `;
 }
 
-function renderDashboard(): void {
+function renderCustomersView(): string {
+  const query = state.searchQuery.toLowerCase().trim();
+  const filtered = state.customers.filter((c) => {
+    if (!query) return true;
+    return (
+      c.name.toLowerCase().includes(query) ||
+      c.email.toLowerCase().includes(query) ||
+      c.externalId.toLowerCase().includes(query)
+    );
+  });
+
+  return `
+    <div class="toolbar">
+      <div class="search-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input id="customer-search-input" type="search" placeholder="Search by name, email, or external ID..." value="${state.searchQuery}" />
+      </div>
+
+      <button id="open-add-customer-btn" class="primary-button" type="button">+ New Customer</button>
+    </div>
+
+    <div class="panel full-width">
+      <div class="panel-header">
+        <div>
+          <h3>All Customer Records</h3>
+          <span>Showing ${filtered.length} of ${state.customers.length} total customers</span>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Email</th>
+              <th>Birth Date</th>
+              <th>Credit Score</th>
+              <th>Annual Income</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filtered.length === 0 ? `
+              <tr>
+                <td colspan="6" class="empty-state">
+                  ${state.searchQuery ? `No customers matched "${state.searchQuery}".` : 'No customer records found.'}
+                </td>
+              </tr>
+            ` : filtered.map((c) => `
+              <tr>
+                <td>
+                  <div class="customer-name">${c.name}</div>
+                  <small>ID: ${c.externalId}</small>
+                </td>
+                <td>${c.email}</td>
+                <td>${c.birthDate || '—'}</td>
+                <td><span class="${getScoreBadgeClass(c.creditScore)}">${c.creditScore}</span></td>
+                <td>${formatMoney(c.annualIncome)}</td>
+                <td>
+                  <div class="action-cell">
+                    <button class="mini-button secondary" type="button" data-edit-customer-id="${c.id}">Edit</button>
+                    <button class="mini-button" type="button" data-customer-id="${c.id}">Assess</button>
+                    <button class="mini-button danger" type="button" data-delete-customer-id="${c.id}">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function renderReportsView(): string {
   const summary = getRiskSummary();
+  const total = state.assessments.length;
+
+  const lowPct = total ? Math.round((summary.low / total) * 100) : 0;
+  const medPct = total ? Math.round((summary.medium / total) * 100) : 0;
+  const highPct = total ? Math.round((summary.high / total) * 100) : 0;
+
+  const appPct = total ? Math.round((summary.approved / total) * 100) : 0;
+  const revPct = total ? Math.round((summary.review / total) * 100) : 0;
+  const rejPct = total ? Math.round((summary.rejected / total) * 100) : 0;
+
+  return `
+    <section class="stats-grid">
+      <article class="stat-card accent">
+        <span>Total Assessments</span>
+        <strong>${total}</strong>
+      </article>
+      <article class="stat-card success">
+        <span>Approval Rate</span>
+        <strong>${appPct}%</strong>
+      </article>
+      <article class="stat-card warning">
+        <span>In Review</span>
+        <strong>${revPct}%</strong>
+      </article>
+      <article class="stat-card" style="background: linear-gradient(180deg, rgba(248, 113, 113, 0.14), rgba(15, 23, 42, 0.9));">
+        <span>Rejection Rate</span>
+        <strong>${rejPct}%</strong>
+      </article>
+    </section>
+
+    <section class="panel-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Risk Level Distribution</h3>
+          <span>Score bands (Low >= 80, Med >= 50, High < 50)</span>
+        </div>
+
+        <div class="report-stack">
+          <div class="report-row">
+            <span>Low</span>
+            <div class="bar"><i style="width:${lowPct}%"></i></div>
+            <strong>${summary.low} (${lowPct}%)</strong>
+          </div>
+          <div class="report-row">
+            <span>Medium</span>
+            <div class="bar"><i style="width:${medPct}%"></i></div>
+            <strong>${summary.medium} (${medPct}%)</strong>
+          </div>
+          <div class="report-row">
+            <span>High</span>
+            <div class="bar"><i style="width:${highPct}%"></i></div>
+            <strong>${summary.high} (${highPct}%)</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Decision Distribution</h3>
+          <span>Automated underwriting outcomes</span>
+        </div>
+
+        <div class="report-stack">
+          <div class="report-row">
+            <span>Approved</span>
+            <div class="bar"><i style="width:${appPct}%; background:var(--success);"></i></div>
+            <strong>${summary.approved} (${appPct}%)</strong>
+          </div>
+          <div class="report-row">
+            <span>Review</span>
+            <div class="bar"><i style="width:${revPct}%; background:var(--warning);"></i></div>
+            <strong>${summary.review} (${revPct}%)</strong>
+          </div>
+          <div class="report-row">
+            <span>Rejected</span>
+            <div class="bar"><i style="width:${rejPct}%; background:var(--danger);"></i></div>
+            <strong>${summary.rejected} (${rejPct}%)</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="panel full-width">
+      <div class="panel-header">
+        <h3>Full Decision & Assessment Stream</h3>
+        <span>Chronological audit log of all completed evaluations</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Customer</th>
+              <th>Assessment Date</th>
+              <th>Risk Score</th>
+              <th>Risk Level</th>
+              <th>Decision</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${state.assessments.length === 0 ? `
+              <tr>
+                <td colspan="7" class="empty-state">No assessments calculated yet.</td>
+              </tr>
+            ` : state.assessments.map((a) => {
+              const customer = state.customers.find((c) => c.id === a.customerId);
+              return `
+                <tr>
+                  <td>#${a.id}</td>
+                  <td>
+                    <div class="customer-name">${customer?.name ?? `Customer #${a.customerId}`}</div>
+                    <small>${customer ? `ID: ${customer.externalId}` : ''}</small>
+                  </td>
+                  <td>${a.assessmentDate || '—'}</td>
+                  <td><strong>${a.riskScore}</strong></td>
+                  <td><span class="risk-pill ${a.riskLevel.toLowerCase()}">${formatRiskLevel(a.riskLevel)}</span></td>
+                  <td><span class="decision-pill ${(a.decision || '').toLowerCase()}">${formatDecision(a.decision)}</span></td>
+                  <td>
+                    <button class="mini-button" type="button" data-customer-id="${a.customerId}">Re-assess</button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function renderEditModal(): string {
+  const c = state.editingCustomer;
+  if (!c) return '';
+
+  return `
+    <div class="modal-overlay" id="edit-modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Modify record</p>
+            <h3>Edit Customer</h3>
+          </div>
+          <button class="modal-close" id="close-edit-modal-btn" type="button">✕</button>
+        </div>
+
+        <form id="edit-customer-form" class="stacked-form compact-form">
+          <div class="field-row">
+            <label>
+              <span>Full name</span>
+              <input name="name" value="${c.name}" required />
+            </label>
+            <label>
+              <span>External ID</span>
+              <input name="externalId" value="${c.externalId}" required />
+            </label>
+          </div>
+
+          <div class="field-row">
+            <label>
+              <span>Email</span>
+              <input type="email" name="email" value="${c.email}" required />
+            </label>
+            <label>
+              <span>Birth date</span>
+              <input type="date" name="birthDate" value="${c.birthDate ?? ''}" required />
+            </label>
+          </div>
+
+          <div class="field-row">
+            <label>
+              <span>Credit score (300 - 850)</span>
+              <input type="number" name="creditScore" min="300" max="850" value="${c.creditScore}" required />
+            </label>
+            <label>
+              <span>Annual income ($)</span>
+              <input type="number" name="annualIncome" min="0" step="1000" value="${c.annualIncome}" required />
+            </label>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="secondary-button" id="cancel-edit-modal-btn">Cancel</button>
+            <button type="submit" class="primary-button">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+}
+
+function renderAddModal(): string {
+  if (!state.isAddModalOpen) return '';
+
+  return `
+    <div class="modal-overlay" id="add-modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Create record</p>
+            <h3>Add New Customer</h3>
+          </div>
+          <button class="modal-close" id="close-add-modal-btn" type="button">✕</button>
+        </div>
+
+        <form id="add-modal-form" class="stacked-form compact-form">
+          <div class="field-row">
+            <label>
+              <span>Full name</span>
+              <input name="name" placeholder="Alice Smith" required />
+            </label>
+            <label>
+              <span>External ID</span>
+              <input name="externalId" placeholder="CUST-009" required />
+            </label>
+          </div>
+
+          <div class="field-row">
+            <label>
+              <span>Email</span>
+              <input type="email" name="email" placeholder="alice@example.com" required />
+            </label>
+            <label>
+              <span>Birth date</span>
+              <input type="date" name="birthDate" required />
+            </label>
+          </div>
+
+          <div class="field-row">
+            <label>
+              <span>Credit score (300 - 850)</span>
+              <input type="number" name="creditScore" min="300" max="850" placeholder="750" required />
+            </label>
+            <label>
+              <span>Annual income ($)</span>
+              <input type="number" name="annualIncome" min="0" step="1000" placeholder="95000" required />
+            </label>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="secondary-button" id="cancel-add-modal-btn">Cancel</button>
+            <button type="submit" class="primary-button">Create Customer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+}
+
+function renderApp(): void {
+  const titles = {
+    dashboard: { eyebrow: 'Overview', title: 'Portfolio dashboard' },
+    customers: { eyebrow: 'Directory', title: 'Customer Management' },
+    reports: { eyebrow: 'Analytics', title: 'Risk & Decision Reports' },
+  };
+
+  const header = titles[state.currentView];
 
   root.innerHTML = `
     <div class="dashboard-shell">
@@ -188,196 +747,129 @@ function renderDashboard(): void {
         </div>
 
         <nav class="nav-links">
-          <span class="nav-item active">Dashboard</span>
-          <span class="nav-item">Customers</span>
-          <span class="nav-item">Reports</span>
+          <button type="button" class="nav-item ${state.currentView === 'dashboard' ? 'active' : ''}" data-view="dashboard">
+            Dashboard
+          </button>
+          <button type="button" class="nav-item ${state.currentView === 'customers' ? 'active' : ''}" data-view="customers">
+            Customers
+          </button>
+          <button type="button" class="nav-item ${state.currentView === 'reports' ? 'active' : ''}" data-view="reports">
+            Reports
+          </button>
         </nav>
       </aside>
 
       <main class="content-panel">
         <header class="topbar">
           <div>
-            <p class="eyebrow alt">Overview</p>
-            <h1>Portfolio dashboard</h1>
+            <p class="eyebrow alt">${header.eyebrow}</p>
+            <h1>${header.title}</h1>
           </div>
           <button id="logout-button" class="secondary-button" type="button">Logout</button>
         </header>
 
-        <section class="stats-grid">
-          <article class="stat-card accent">
-            <span>Total customers</span>
-            <strong>${state.customers.length}</strong>
-          </article>
-          <article class="stat-card">
-            <span>Assessments</span>
-            <strong>${state.assessments.length}</strong>
-          </article>
-          <article class="stat-card warning">
-            <span>High risk</span>
-            <strong>${summary.high}</strong>
-          </article>
-          <article class="stat-card success">
-            <span>Low risk</span>
-            <strong>${summary.low}</strong>
-          </article>
-        </section>
-
-        <section class="panel-grid">
-          <div class="panel">
-            <div class="panel-header">
-              <h3>Customer list</h3>
-              <span>${state.customers.length} active records</span>
-            </div>
-
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Score</th>
-                    <th>Income</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${state.customers.length === 0 ? `
-                    <tr>
-                      <td colspan="4" class="empty-state">No customers yet.</td>
-                    </tr>
-                  ` : state.customers.map((customer) => `
-                    <tr>
-                      <td>
-                        <div class="customer-name">${customer.name}</div>
-                        <small>${customer.email}</small>
-                      </td>
-                      <td>${customer.creditScore}</td>
-                      <td>${formatMoney(customer.annualIncome)}</td>
-                      <td>
-                        <button class="mini-button" type="button" data-customer-id="${customer.id}">Run assessment</button>
-                      </td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-header">
-              <h3>Risk reports</h3>
-              <span>Latest outcomes</span>
-            </div>
-
-            <div class="report-stack">
-              <div class="report-row">
-                <span>Low</span>
-                <div class="bar"><i style="width:${state.assessments.length ? (summary.low / state.assessments.length) * 100 : 0}%"></i></div>
-                <strong>${summary.low}</strong>
-              </div>
-              <div class="report-row">
-                <span>Medium</span>
-                <div class="bar"><i style="width:${state.assessments.length ? (summary.medium / state.assessments.length) * 100 : 0}%"></i></div>
-                <strong>${summary.medium}</strong>
-              </div>
-              <div class="report-row">
-                <span>High</span>
-                <div class="bar"><i style="width:${state.assessments.length ? (summary.high / state.assessments.length) * 100 : 0}%"></i></div>
-                <strong>${summary.high}</strong>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="bottom-grid">
-          <div class="panel">
-            <div class="panel-header">
-              <h3>Add customer</h3>
-              <span>Create record</span>
-            </div>
-
-            <form id="customer-form" class="stacked-form compact-form">
-              <div class="field-row">
-                <label>
-                  <span>Full name</span>
-                  <input name="name" required />
-                </label>
-                <label>
-                  <span>External ID</span>
-                  <input name="externalId" required />
-                </label>
-              </div>
-
-              <div class="field-row">
-                <label>
-                  <span>Email</span>
-                  <input type="email" name="email" required />
-                </label>
-                <label>
-                  <span>Birth date</span>
-                  <input type="date" name="birthDate" required />
-                </label>
-              </div>
-
-              <div class="field-row">
-                <label>
-                  <span>Credit score</span>
-                  <input type="number" name="creditScore" min="0" max="850" required />
-                </label>
-                <label>
-                  <span>Annual income</span>
-                  <input type="number" name="annualIncome" min="0" step="1000" required />
-                </label>
-              </div>
-
-              <button type="submit" class="primary-button">Create customer</button>
-            </form>
-          </div>
-
-          <div class="panel">
-            <div class="panel-header">
-              <h3>Recent assessments</h3>
-              <span>Decision stream</span>
-            </div>
-
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Customer</th>
-                    <th>Risk</th>
-                    <th>Decision</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${state.assessments.length === 0 ? `
-                    <tr>
-                      <td colspan="3" class="empty-state">No assessments yet.</td>
-                    </tr>
-                  ` : state.assessments.slice(0, 6).map((assessment) => {
-                    const customer = state.customers.find((item) => item.id === assessment.customerId);
-                    return `
-                      <tr>
-                        <td>${customer?.name ?? `Customer #${assessment.customerId}`}</td>
-                        <td><span class="risk-pill ${assessment.riskLevel.toLowerCase()}">${formatRiskLevel(assessment.riskLevel)}</span></td>
-                        <td>${assessment.decision || '—'}</td>
-                      </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+        ${state.currentView === 'dashboard' ? renderDashboardView() : ''}
+        ${state.currentView === 'customers' ? renderCustomersView() : ''}
+        ${state.currentView === 'reports' ? renderReportsView() : ''}
       </main>
     </div>
+
+    ${renderEditModal()}
+    ${renderAddModal()}
   `;
 
+  bindEvents();
+}
+
+function bindEvents(): void {
+  // Navigation switching
+  root.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const view = button.getAttribute('data-view') as ActiveView | null;
+      if (view && view !== state.currentView) {
+        state.currentView = view;
+        renderApp();
+      }
+    });
+  });
+
+  // Logout
   const logoutButton = root.querySelector<HTMLButtonElement>('#logout-button');
   logoutButton?.addEventListener('click', () => {
     setToken('');
     renderLogin();
   });
 
+  // Search input on Customers view
+  const searchInput = root.querySelector<HTMLInputElement>('#customer-search-input');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      state.searchQuery = searchInput.value;
+      const filteredPanel = root.querySelector('.panel.full-width');
+      if (filteredPanel) {
+        // Quick re-render of Customers view without flickering the full shell
+        renderApp();
+        const updatedInput = root.querySelector<HTMLInputElement>('#customer-search-input');
+        if (updatedInput) {
+          updatedInput.focus();
+          updatedInput.setSelectionRange(state.searchQuery.length, state.searchQuery.length);
+        }
+      }
+    });
+  }
+
+  // Open Add modal button
+  const openAddBtn = root.querySelector<HTMLButtonElement>('#open-add-customer-btn');
+  openAddBtn?.addEventListener('click', () => {
+    state.isAddModalOpen = true;
+    renderApp();
+  });
+
+  // Close Add modal
+  const closeAddBtn = root.querySelector<HTMLButtonElement>('#close-add-modal-btn');
+  const cancelAddBtn = root.querySelector<HTMLButtonElement>('#cancel-add-modal-btn');
+  const addOverlay = root.querySelector<HTMLDivElement>('#add-modal-overlay');
+
+  const closeAdd = () => {
+    state.isAddModalOpen = false;
+    renderApp();
+  };
+
+  closeAddBtn?.addEventListener('click', closeAdd);
+  cancelAddBtn?.addEventListener('click', closeAdd);
+  addOverlay?.addEventListener('click', (e) => {
+    if (e.target === addOverlay) closeAdd();
+  });
+
+  // Add customer form (in modal)
+  const addModalForm = root.querySelector<HTMLFormElement>('#add-modal-form');
+  addModalForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const formData = new FormData(addModalForm);
+    const payload = {
+      externalId: String(formData.get('externalId') ?? '').trim(),
+      name: String(formData.get('name') ?? '').trim(),
+      email: String(formData.get('email') ?? '').trim(),
+      birthDate: String(formData.get('birthDate') ?? '').trim(),
+      creditScore: Number(formData.get('creditScore')),
+      annualIncome: Number(formData.get('annualIncome')),
+    };
+
+    try {
+      await request('/api/customers', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      state.isAddModalOpen = false;
+      showToast('Customer created successfully', 'success');
+      await loadData();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to create customer';
+      showToast(msg, 'error');
+    }
+  });
+
+  // Inline customer form (on dashboard)
   const customerForm = root.querySelector<HTMLFormElement>('#customer-form');
   customerForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -391,31 +883,131 @@ function renderDashboard(): void {
       annualIncome: Number(formData.get('annualIncome')),
     };
 
-    await request('/api/customers', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-
-    await loadDashboard();
+    try {
+      await request('/api/customers', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      showToast('Customer created successfully', 'success');
+      await loadData();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to create customer';
+      showToast(msg, 'error');
+    }
   });
 
-  root.querySelectorAll<HTMLButtonElement>('[data-customer-id]').forEach((button) => {
+  // Edit Customer Modal triggers
+  root.querySelectorAll<HTMLButtonElement>('[data-edit-customer-id]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const customerId = Number(button.getAttribute('data-edit-customer-id'));
+      const customer = state.customers.find((c) => c.id === customerId);
+      if (customer) {
+        state.editingCustomer = customer;
+        renderApp();
+      }
+    });
+  });
+
+  // Close Edit modal
+  const closeEditBtn = root.querySelector<HTMLButtonElement>('#close-edit-modal-btn');
+  const cancelEditBtn = root.querySelector<HTMLButtonElement>('#cancel-edit-modal-btn');
+  const editOverlay = root.querySelector<HTMLDivElement>('#edit-modal-overlay');
+
+  const closeEdit = () => {
+    state.editingCustomer = null;
+    renderApp();
+  };
+
+  closeEditBtn?.addEventListener('click', closeEdit);
+  cancelEditBtn?.addEventListener('click', closeEdit);
+  editOverlay?.addEventListener('click', (e) => {
+    if (e.target === editOverlay) closeEdit();
+  });
+
+  // Edit customer form submit
+  const editForm = root.querySelector<HTMLFormElement>('#edit-customer-form');
+  editForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const customerId = state.editingCustomer?.id;
+    if (!customerId) return;
+
+    const formData = new FormData(editForm);
+    const payload = {
+      externalId: String(formData.get('externalId') ?? '').trim(),
+      name: String(formData.get('name') ?? '').trim(),
+      email: String(formData.get('email') ?? '').trim(),
+      birthDate: String(formData.get('birthDate') ?? '').trim(),
+      creditScore: Number(formData.get('creditScore')),
+      annualIncome: Number(formData.get('annualIncome')),
+    };
+
+    try {
+      await request(`/api/customers/${customerId}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+
+      state.editingCustomer = null;
+      showToast('Customer updated successfully', 'success');
+      await loadData();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to update customer';
+      showToast(msg, 'error');
+    }
+  });
+
+  // Delete customer
+  root.querySelectorAll<HTMLButtonElement>('[data-delete-customer-id]').forEach((button) => {
     button.addEventListener('click', async () => {
-      const customerId = button.getAttribute('data-customer-id');
-      if (!customerId) {
+      const customerId = Number(button.getAttribute('data-delete-customer-id'));
+      const customer = state.customers.find((c) => c.id === customerId);
+      const name = customer?.name ?? `#${customerId}`;
+
+      if (!confirm(`Are you sure you want to delete customer ${name}?`)) {
         return;
       }
 
-      await request(`/api/risk-assessments/calculate/${customerId}`, {
-        method: 'POST',
-      });
+      try {
+        await request(`/api/customers/${customerId}`, {
+          method: 'DELETE',
+        });
+        showToast('Customer deleted successfully', 'success');
+        await loadData();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Failed to delete customer';
+        showToast(msg, 'error');
+      }
+    });
+  });
 
-      await loadDashboard();
+  // Run assessment trigger
+  root.querySelectorAll<HTMLButtonElement>('[data-customer-id]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const customerId = button.getAttribute('data-customer-id');
+      if (!customerId) return;
+
+      try {
+        button.disabled = true;
+        button.textContent = 'Scoring...';
+
+        const result = await request<RiskAssessment>(`/api/risk-assessments/calculate/${customerId}`, {
+          method: 'POST',
+        });
+
+        const dec = result.decision ? `Outcome: ${result.decision}` : 'Calculated';
+        showToast(`Risk Assessment completed! ${dec} (Score: ${result.riskScore})`, 'success');
+        await loadData();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Assessment failed';
+        showToast(msg, 'error');
+        button.disabled = false;
+        button.textContent = 'Assess';
+      }
     });
   });
 }
 
-async function loadDashboard(): Promise<void> {
+async function loadData(): Promise<void> {
   try {
     const [customers, assessments] = await Promise.all([
       request<Customer[]>('/api/customers'),
@@ -424,13 +1016,17 @@ async function loadDashboard(): Promise<void> {
 
     state.customers = customers ?? [];
     state.assessments = assessments ?? [];
-    renderDashboard();
+    renderApp();
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load dashboard';
-    alert(message);
+    const message = error instanceof Error ? error.message : 'Unable to load data';
+    showToast(message, 'error');
     setToken('');
     renderLogin();
   }
+}
+
+async function loadDashboard(): Promise<void> {
+  await loadData();
 }
 
 if (!state.token) {
