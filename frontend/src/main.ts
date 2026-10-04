@@ -359,7 +359,7 @@ function renderDashboard(): void {
                       <tr>
                         <td>${customer?.name ?? `Customer #${assessment.customerId}`}</td>
                         <td><span class="risk-pill ${assessment.riskLevel.toLowerCase()}">${formatRiskLevel(assessment.riskLevel)}</span></td>
-                        <td>${assessment.decision}</td>
+                        <td>${assessment.decision || '—'}</td>
                       </tr>
                     `;
                   }).join('')}

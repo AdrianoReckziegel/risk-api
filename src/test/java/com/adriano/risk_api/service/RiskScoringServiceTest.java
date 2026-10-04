@@ -2,6 +2,7 @@ package com.adriano.risk_api.service;
 
 import com.adriano.risk_api.dto.RiskResult;
 import com.adriano.risk_api.entity.Customer;
+import com.adriano.risk_api.entity.Decision;
 import com.adriano.risk_api.entity.RiskLevel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,7 @@ class RiskScoringServiceTest {
 
         assertEquals(100, result.getScore());
         assertEquals(RiskLevel.LOW, result.getRiskLevel());
+        assertEquals(Decision.APPROVED, result.getDecision());
     }
 
     @Test
@@ -46,6 +48,7 @@ class RiskScoringServiceTest {
 
         assertEquals(20, result.getScore());
         assertEquals(RiskLevel.HIGH, result.getRiskLevel());
+        assertEquals(Decision.REJECTED, result.getDecision());
     }
 
     @Test
@@ -57,6 +60,7 @@ class RiskScoringServiceTest {
 
         assertEquals(60, result.getScore());
         assertEquals(RiskLevel.MEDIUM, result.getRiskLevel());
+        assertEquals(Decision.REVIEW, result.getDecision());
     }
 
     @Test
@@ -68,6 +72,7 @@ class RiskScoringServiceTest {
 
         assertEquals(100, result.getScore());
         assertEquals(RiskLevel.LOW, result.getRiskLevel());
+        assertEquals(Decision.APPROVED, result.getDecision());
     }
 
     @Test
@@ -79,6 +84,7 @@ class RiskScoringServiceTest {
 
         assertEquals(40, result.getScore());
         assertEquals(RiskLevel.HIGH, result.getRiskLevel());
+        assertEquals(Decision.REJECTED, result.getDecision());
     }
 
     @Test
@@ -90,6 +96,7 @@ class RiskScoringServiceTest {
 
         assertEquals(100, result.getScore());
         assertEquals(RiskLevel.LOW, result.getRiskLevel());
+        assertEquals(Decision.APPROVED, result.getDecision());
     }
 
     @Test
@@ -101,5 +108,21 @@ class RiskScoringServiceTest {
 
         assertEquals(40, result.getScore());
         assertEquals(RiskLevel.HIGH, result.getRiskLevel());
+        assertEquals(Decision.REJECTED, result.getDecision());
     }
-}
+
+    @Test
+    void shouldHandleNullCustomerAndNullFieldsGracefully() {
+        Customer emptyCustomer = new Customer();
+        RiskResult result = service.calculate(emptyCustomer);
+
+        assertEquals(0, result.getScore());
+        assertEquals(RiskLevel.HIGH, result.getRiskLevel());
+        assertEquals(Decision.REJECTED, result.getDecision());
+
+        RiskResult nullResult = service.calculate(null);
+        assertEquals(0, nullResult.getScore());
+        assertEquals(RiskLevel.HIGH, nullResult.getRiskLevel());
+        assertEquals(Decision.REJECTED, nullResult.getDecision());
+    }
+}

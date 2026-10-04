@@ -9,17 +9,15 @@ import com.adriano.risk_api.exception.CustomerNotFoundException;
 import com.adriano.risk_api.exception.RiskAssessmentNotFoundException;
 import com.adriano.risk_api.repository.CustomerRepository;
 import com.adriano.risk_api.repository.RiskAssessmentRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Service
-public class RiskAssessmentServiceImpl implements RiskAssessmentService{
+public class RiskAssessmentServiceImpl implements RiskAssessmentService {
 
-    private RiskAssessmentRepository riskAssessmentRepository;
+    private final RiskAssessmentRepository riskAssessmentRepository;
     private final CustomerRepository customerRepository;
     private final RiskScoringService riskScoringService;
 
@@ -48,6 +46,8 @@ public class RiskAssessmentServiceImpl implements RiskAssessmentService{
         assessment.setAssessmentDate(LocalDate.now());
         assessment.setRiskScore(result.getScore());
         assessment.setRiskLevel(result.getRiskLevel());
+        assessment.setDecision(result.getDecision());
+        assessment.setInputSnapshot(buildInputSnapshot(customer));
 
         RiskAssessment saved = riskAssessmentRepository.save(assessment);
 
@@ -62,27 +62,14 @@ public class RiskAssessmentServiceImpl implements RiskAssessmentService{
                         "Risk assessment not found with id: " + id
                 ));
 
-        return RiskAssessmentResponse.builder()
-                .id(assessment.getId())
-                .customerId(assessment.getCustomer().getId())
-                .riskScore(assessment.getRiskScore())
-                .riskLevel(assessment.getRiskLevel().name())
-                .createdAt(assessment.getCreatedAt())
-                .build();
+        return toResponse(assessment);
     }
 
     @Override
     public List<RiskAssessmentResponse> getAll() {
 
         return riskAssessmentRepository.findAll().stream()
-                .map(a -> RiskAssessmentResponse.builder()
-                        .id(a.getId())
-                        .customerId(a.getCustomer().getId())
-                        .riskScore(a.getRiskScore())
-                        .riskLevel(a.getRiskLevel().name())
-                        .createdAt(a.getCreatedAt())
-                        .build()
-                )
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -117,6 +104,8 @@ public class RiskAssessmentServiceImpl implements RiskAssessmentService{
         existing.setCustomer(customer);
         existing.setRiskScore(result.getScore());
         existing.setRiskLevel(result.getRiskLevel());
+        existing.setDecision(result.getDecision());
+        existing.setInputSnapshot(buildInputSnapshot(customer));
         existing.setAssessmentDate(LocalDate.now());
 
         RiskAssessment saved = riskAssessmentRepository.save(existing);
@@ -150,26 +139,36 @@ public class RiskAssessmentServiceImpl implements RiskAssessmentService{
         assessment.setAssessmentDate(LocalDate.now());
         assessment.setRiskScore(result.getScore());
         assessment.setRiskLevel(result.getRiskLevel());
+        assessment.setDecision(result.getDecision());
+        assessment.setInputSnapshot(buildInputSnapshot(customer));
 
         RiskAssessment saved = riskAssessmentRepository.save(assessment);
 
-        return RiskAssessmentResponse.builder()
-                .id(saved.getId())
-                .customerId(saved.getCustomer().getId())
-                .riskScore(saved.getRiskScore())
-                .riskLevel(saved.getRiskLevel().name())
-                .createdAt(saved.getCreatedAt())
-                .build();
+        return toResponse(saved);
     }
 
     private RiskAssessmentResponse toResponse(RiskAssessment a) {
         return RiskAssessmentResponse.builder()
                 .id(a.getId())
-                .customerId(a.getCustomer().getId())
+                .customerId(a.getCustomer() != null ? a.getCustomer().getId() : null)
+                .assessmentDate(a.getAssessmentDate())
                 .riskScore(a.getRiskScore())
-                .riskLevel(a.getRiskLevel().name())
+                .riskLevel(a.getRiskLevel() != null ? a.getRiskLevel().name() : null)
+                .decision(a.getDecision() != null ? a.getDecision().name() : null)
                 .createdAt(a.getCreatedAt())
                 .build();
+    }
+
+    private String buildInputSnapshot(Customer customer) {
+        if (customer == null) {
+            return null;
+        }
+        return String.format(
+                "{\"externalId\":\"%s\",\"creditScore\":%s,\"annualIncome\":%s}",
+                customer.getExternalId() != null ? customer.getExternalId() : "",
+                customer.getCreditScore() != null ? customer.getCreditScore() : "null",
+                customer.getAnnualIncome() != null ? customer.getAnnualIncome().toPlainString() : "null"
+        );
     }
 
 }
