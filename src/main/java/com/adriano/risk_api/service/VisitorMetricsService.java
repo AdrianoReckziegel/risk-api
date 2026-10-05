@@ -194,7 +194,7 @@ public class VisitorMetricsService {
         if (lower.contains("indeed.com")) return "Indeed";
         if (lower.contains("glassdoor.com")) return "Glassdoor";
         if (lower.contains("google.com")) return "Google Search";
-        if (lower.contains("adreck.ca")) return "Portfolio (adreck.ca)";
+        if (lower.contains("adreck.ca") || lower.contains("adreck.com")) return "Portfolio (adreck)";
 
         try {
             URI uri = URI.create(referrer);
