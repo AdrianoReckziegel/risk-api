@@ -195,6 +195,11 @@ function renderLogin(): void {
 
           <button type="submit" class="primary-button">Login</button>
         </form>
+
+        <div class="auth-footer">
+          <span>Need access to this portal?</span>
+          <button type="button" class="link-button" id="open-request-access-btn">Request access</button>
+        </div>
       </div>
     </div>
   `;
@@ -222,6 +227,120 @@ function renderLogin(): void {
         statusText.classList.add('error-text');
       }
     }
+  });
+
+  const openRequestAccessBtn = root.querySelector<HTMLButtonElement>('#open-request-access-btn');
+  openRequestAccessBtn?.addEventListener('click', () => {
+    renderRequestAccess();
+  });
+}
+
+function renderRequestAccess(): void {
+  root.innerHTML = `
+    <div class="auth-shell">
+      <div class="auth-card">
+        <p class="eyebrow">Account Clearance</p>
+        <h1>Request Access</h1>
+        <p class="subtitle" id="request-subtitle">
+          Submit your email and the reason for access. An email will be dispatched to <strong>adrianoreck@gmail.com</strong>.
+        </p>
+
+        <form id="request-access-form" class="stacked-form">
+          <label>
+            <span>Your name (optional)</span>
+            <input name="name" type="text" placeholder="Jane Doe" />
+          </label>
+
+          <label>
+            <span>Email address</span>
+            <input name="email" type="email" placeholder="name@example.com" required />
+          </label>
+
+          <label>
+            <span>Why do you need access?</span>
+            <textarea name="reason" rows="4" placeholder="Briefly describe your role, department, or reason for requesting access..." required></textarea>
+          </label>
+
+          <div class="form-actions">
+            <button type="button" class="secondary-button" id="back-to-login-btn">Back to Login</button>
+            <button type="submit" class="primary-button" id="submit-access-btn">Submit Request</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  const backBtn = root.querySelector<HTMLButtonElement>('#back-to-login-btn');
+  backBtn?.addEventListener('click', () => {
+    renderLogin();
+  });
+
+  const requestForm = root.querySelector<HTMLFormElement>('#request-access-form');
+  requestForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const formData = new FormData(requestForm);
+    const name = String(formData.get('name') ?? '').trim();
+    const email = String(formData.get('email') ?? '').trim();
+    const reason = String(formData.get('reason') ?? '').trim();
+
+    const submitBtn = root.querySelector<HTMLButtonElement>('#submit-access-btn');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
+    }
+
+    try {
+      const response = await request<{ message: string; recipient: string }>('/api/auth/request-access', {
+        method: 'POST',
+        body: JSON.stringify({ name, email, reason }),
+      });
+
+      renderAccessRequestSuccess(email, response?.recipient || 'adrianoreck@gmail.com', reason);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to submit request';
+      const statusText = root.querySelector<HTMLParagraphElement>('#request-subtitle');
+      if (statusText) {
+        statusText.innerHTML = `<span class="error-text">${message}</span> You can also email directly: <a class="link-button" href="mailto:adrianoreck@gmail.com?subject=Access%20Request&body=${encodeURIComponent(reason)}">adrianoreck@gmail.com</a>`;
+      }
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Request';
+      }
+    }
+  });
+}
+
+function renderAccessRequestSuccess(requesterEmail: string, recipientEmail: string, reason: string): void {
+  const mailSubject = encodeURIComponent(`[Risk API] Access Request: ${requesterEmail}`);
+  const mailBody = encodeURIComponent(`Hello Adriano,\n\nI have submitted an access request for the Risk Assessment Portal.\n\nRequester: ${requesterEmail}\nReason:\n${reason}\n\nThank you!`);
+
+  root.innerHTML = `
+    <div class="auth-shell">
+      <div class="auth-card success-state">
+        <div class="success-icon-wrap">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <p class="eyebrow alt">Request Dispatched</p>
+        <h1>Access Requested</h1>
+        <p class="subtitle">
+          Your request from <strong>${requesterEmail}</strong> has been processed and an email notification was sent to <strong>${recipientEmail}</strong>.
+        </p>
+
+        <div class="direct-email-box">
+          <p>Want to send a direct message from your client?</p>
+          <a class="secondary-button mailto-link" href="mailto:${recipientEmail}?subject=${mailSubject}&body=${mailBody}">Open in Mail Client</a>
+        </div>
+
+        <button type="button" class="primary-button" id="return-to-login-btn" style="width: 100%; margin-top: 20px;">Return to Login</button>
+      </div>
+    </div>
+  `;
+
+  const returnBtn = root.querySelector<HTMLButtonElement>('#return-to-login-btn');
+  returnBtn?.addEventListener('click', () => {
+    renderLogin();
   });
 }
 
