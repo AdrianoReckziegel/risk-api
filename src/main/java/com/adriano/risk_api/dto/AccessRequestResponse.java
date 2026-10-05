@@ -15,8 +15,5 @@ public class AccessRequestResponse {
 
     private String message;
 
-    private String recipient;
-
     private Instant timestamp;
-
 }

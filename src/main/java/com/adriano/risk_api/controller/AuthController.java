@@ -63,7 +63,6 @@ public class AuthController {
 
         return ResponseEntity.ok(AccessRequestResponse.builder()
                 .message("Access request submitted successfully.")
-                .recipient(emailService.getRecipient())
                 .timestamp(Instant.now())
                 .build());
     }

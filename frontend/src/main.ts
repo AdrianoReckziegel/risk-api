@@ -242,7 +242,7 @@ function renderRequestAccess(): void {
         <p class="eyebrow">Account Clearance</p>
         <h1>Request Access</h1>
         <p class="subtitle" id="request-subtitle">
-          Submit your email and the reason for access. An email will be dispatched to <strong>adrianoreck@gmail.com</strong>.
+          Submit your email and the reason for access. Your request will be reviewed by an administrator.
         </p>
 
         <form id="request-access-form" class="stacked-form">
@@ -290,17 +290,17 @@ function renderRequestAccess(): void {
     }
 
     try {
-      const response = await request<{ message: string; recipient: string }>('/api/auth/request-access', {
+      await request<{ message: string }>('/api/auth/request-access', {
         method: 'POST',
         body: JSON.stringify({ name, email, reason }),
       });
 
-      renderAccessRequestSuccess(email, response?.recipient || 'adrianoreck@gmail.com', reason);
+      renderAccessRequestSuccess(email);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to submit request';
       const statusText = root.querySelector<HTMLParagraphElement>('#request-subtitle');
       if (statusText) {
-        statusText.innerHTML = `<span class="error-text">${message}</span> You can also email directly: <a class="link-button" href="mailto:adrianoreck@gmail.com?subject=Access%20Request&body=${encodeURIComponent(reason)}">adrianoreck@gmail.com</a>`;
+        statusText.innerHTML = `<span class="error-text">${message}</span>`;
       }
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -310,10 +310,7 @@ function renderRequestAccess(): void {
   });
 }
 
-function renderAccessRequestSuccess(requesterEmail: string, recipientEmail: string, reason: string): void {
-  const mailSubject = encodeURIComponent(`[Risk API] Access Request: ${requesterEmail}`);
-  const mailBody = encodeURIComponent(`Hello Adriano,\n\nI have submitted an access request for the Risk Assessment Portal.\n\nRequester: ${requesterEmail}\nReason:\n${reason}\n\nThank you!`);
-
+function renderAccessRequestSuccess(requesterEmail: string): void {
   root.innerHTML = `
     <div class="auth-shell">
       <div class="auth-card success-state">
@@ -325,15 +322,10 @@ function renderAccessRequestSuccess(requesterEmail: string, recipientEmail: stri
         <p class="eyebrow alt">Request Dispatched</p>
         <h1>Access Requested</h1>
         <p class="subtitle">
-          Your request from <strong>${requesterEmail}</strong> has been processed and an email notification was sent to <strong>${recipientEmail}</strong>.
+          Your request for <strong>${requesterEmail}</strong> has been submitted to the administrator for review.
         </p>
 
-        <div class="direct-email-box">
-          <p>Want to send a direct message from your client?</p>
-          <a class="secondary-button mailto-link" href="mailto:${recipientEmail}?subject=${mailSubject}&body=${mailBody}">Open in Mail Client</a>
-        </div>
-
-        <button type="button" class="primary-button" id="return-to-login-btn" style="width: 100%; margin-top: 20px;">Return to Login</button>
+        <button type="button" class="primary-button" id="return-to-login-btn" style="width: 100%; margin-top: 24px;">Return to Login</button>
       </div>
     </div>
   `;
