@@ -35,6 +35,7 @@ type DashboardState = {
   searchQuery: string;
   editingCustomer: Customer | null;
   isAddModalOpen: boolean;
+  isViewOnly: boolean;
 };
 
 const STORAGE_KEY = 'risk-api-token';
@@ -47,6 +48,107 @@ if (!appRoot) {
 
 const root = appRoot;
 
+const DEMO_CUSTOMERS: Customer[] = [
+  {
+    id: 101,
+    externalId: 'CUST-8401',
+    name: 'Sarah Jenkins',
+    email: 's.jenkins@example.com',
+    birthDate: '1988-04-12',
+    creditScore: 785,
+    annualIncome: 125000,
+    createdAt: '2026-09-15T10:00:00Z',
+  },
+  {
+    id: 102,
+    externalId: 'CUST-8402',
+    name: 'Marcus Vance',
+    email: 'm.vance@example.com',
+    birthDate: '1992-09-23',
+    creditScore: 690,
+    annualIncome: 74000,
+    createdAt: '2026-09-18T11:30:00Z',
+  },
+  {
+    id: 103,
+    externalId: 'CUST-8403',
+    name: 'Elena Rostova',
+    email: 'e.rostova@example.com',
+    birthDate: '1981-11-05',
+    creditScore: 820,
+    annualIncome: 160000,
+    createdAt: '2026-09-20T14:15:00Z',
+  },
+  {
+    id: 104,
+    externalId: 'CUST-8404',
+    name: 'David Kim',
+    email: 'd.kim@example.com',
+    birthDate: '1995-02-18',
+    creditScore: 540,
+    annualIncome: 42000,
+    createdAt: '2026-09-25T09:45:00Z',
+  },
+  {
+    id: 105,
+    externalId: 'CUST-8405',
+    name: 'Chloe Bennett',
+    email: 'c.bennett@example.com',
+    birthDate: '1990-07-30',
+    creditScore: 710,
+    annualIncome: 89000,
+    createdAt: '2026-10-01T16:20:00Z',
+  },
+];
+
+const DEMO_ASSESSMENTS: RiskAssessment[] = [
+  {
+    id: 501,
+    customerId: 101,
+    assessmentDate: '2026-10-04',
+    riskScore: 820,
+    riskLevel: 'LOW',
+    decision: 'APPROVED',
+    createdAt: '2026-10-04T10:15:00Z',
+  },
+  {
+    id: 502,
+    customerId: 102,
+    assessmentDate: '2026-10-04',
+    riskScore: 675,
+    riskLevel: 'MEDIUM',
+    decision: 'REVIEW',
+    createdAt: '2026-10-04T11:20:00Z',
+  },
+  {
+    id: 503,
+    customerId: 103,
+    assessmentDate: '2026-10-03',
+    riskScore: 845,
+    riskLevel: 'LOW',
+    decision: 'APPROVED',
+    createdAt: '2026-10-03T14:40:00Z',
+  },
+  {
+    id: 504,
+    customerId: 104,
+    assessmentDate: '2026-10-02',
+    riskScore: 490,
+    riskLevel: 'HIGH',
+    decision: 'REJECTED',
+    createdAt: '2026-10-02T16:05:00Z',
+  },
+  {
+    id: 505,
+    customerId: 105,
+    assessmentDate: '2026-10-01',
+    riskScore: 730,
+    riskLevel: 'LOW',
+    decision: 'APPROVED',
+    createdAt: '2026-10-01T09:30:00Z',
+  },
+];
+
 const state: DashboardState = {
   token: localStorage.getItem(STORAGE_KEY) ?? '',
   customers: [],
@@ -55,6 +157,7 @@ const state: DashboardState = {
   searchQuery: '',
   editingCustomer: null,
   isAddModalOpen: false,
+  isViewOnly: false,
 };
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -175,6 +278,7 @@ function getRiskSummary() {
 }
 
 function renderLogin(): void {
+  state.isViewOnly = false;
   root.innerHTML = `
     <div class="auth-shell">
       <div class="auth-card">
@@ -193,8 +297,20 @@ function renderLogin(): void {
             <input name="password" type="password" placeholder="Enter your password" required />
           </label>
 
-          <button type="submit" class="primary-button">Login</button>
+          <button type="submit" class="primary-button" style="width: 100%;">Login</button>
         </form>
+
+        <div class="auth-divider">
+          <span>or explore</span>
+        </div>
+
+        <button type="button" class="secondary-button view-only-button" id="view-only-access-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          Access as View Only
+        </button>
 
         <div class="auth-footer">
           <span>Need access to this portal?</span>
@@ -217,6 +333,7 @@ function renderLogin(): void {
         body: JSON.stringify({ username, password }),
       });
 
+      state.isViewOnly = false;
       setToken(payload.token);
       await loadDashboard();
     } catch (error) {
@@ -229,10 +346,28 @@ function renderLogin(): void {
     }
   });
 
+  const viewOnlyBtn = root.querySelector<HTMLButtonElement>('#view-only-access-btn');
+  viewOnlyBtn?.addEventListener('click', () => {
+    enterViewOnlyMode();
+  });
+
   const openRequestAccessBtn = root.querySelector<HTMLButtonElement>('#open-request-access-btn');
   openRequestAccessBtn?.addEventListener('click', () => {
     renderRequestAccess();
   });
+}
+
+function enterViewOnlyMode(): void {
+  state.isViewOnly = true;
+  state.currentView = 'dashboard';
+  state.editingCustomer = null;
+  state.isAddModalOpen = false;
+
+  // Populate sample portfolio data for the view-only dashboard display
+  state.customers = [...DEMO_CUSTOMERS];
+  state.assessments = [...DEMO_ASSESSMENTS];
+
+  renderApp();
 }
 
 function renderRequestAccess(): void {
@@ -338,8 +473,22 @@ function renderAccessRequestSuccess(requesterEmail: string): void {
 
 function renderDashboardView(): string {
   const summary = getRiskSummary();
+  const isViewOnly = state.isViewOnly;
 
   return `
+    ${isViewOnly ? `
+      <div class="view-only-banner">
+        <div class="view-only-badge">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <span>View-Only Mode</span>
+        </div>
+        <p>This is a read-only preview of the portfolio dashboard. All buttons, actions, and form inputs are non-responsive and disabled.</p>
+      </div>
+    ` : ''}
+
     <section class="stats-grid">
       <article class="stat-card accent">
         <span>Total customers</span>
@@ -391,8 +540,13 @@ function renderDashboardView(): string {
                   <td>${formatMoney(customer.annualIncome)}</td>
                   <td>
                     <div class="action-cell">
-                      <button class="mini-button secondary" type="button" data-edit-customer-id="${customer.id}">Edit</button>
-                      <button class="mini-button" type="button" data-customer-id="${customer.id}">Assess</button>
+                      ${isViewOnly ? `
+                        <button class="mini-button secondary disabled-control" type="button" disabled title="Disabled in view-only mode">Edit</button>
+                        <button class="mini-button disabled-control" type="button" disabled title="Disabled in view-only mode">Assess</button>
+                      ` : `
+                        <button class="mini-button secondary" type="button" data-edit-customer-id="${customer.id}">Edit</button>
+                        <button class="mini-button" type="button" data-customer-id="${customer.id}">Assess</button>
+                      `}
                     </div>
                   </td>
                 </tr>
@@ -432,44 +586,46 @@ function renderDashboardView(): string {
       <div class="panel">
         <div class="panel-header">
           <h3>Add customer</h3>
-          <span>Create record</span>
+          ${isViewOnly ? '<span class="status-tag view-only-tag">Disabled in View-Only</span>' : '<span>Create record</span>'}
         </div>
 
-        <form id="customer-form" class="stacked-form compact-form">
+        <form id="customer-form" class="stacked-form compact-form ${isViewOnly ? 'disabled-control' : ''}">
           <div class="field-row">
             <label>
               <span>Full name</span>
-              <input name="name" placeholder="John Doe" required />
+              <input name="name" placeholder="John Doe" ${isViewOnly ? 'disabled readonly' : 'required'} />
             </label>
             <label>
               <span>External ID</span>
-              <input name="externalId" placeholder="CUST-001" required />
+              <input name="externalId" placeholder="CUST-001" ${isViewOnly ? 'disabled readonly' : 'required'} />
             </label>
           </div>
 
           <div class="field-row">
             <label>
               <span>Email</span>
-              <input type="email" name="email" placeholder="john@example.com" required />
+              <input type="email" name="email" placeholder="john@example.com" ${isViewOnly ? 'disabled readonly' : 'required'} />
             </label>
             <label>
               <span>Birth date</span>
-              <input type="date" name="birthDate" required />
+              <input type="date" name="birthDate" ${isViewOnly ? 'disabled readonly' : 'required'} />
             </label>
           </div>
 
           <div class="field-row">
             <label>
               <span>Credit score (300 - 850)</span>
-              <input type="number" name="creditScore" min="300" max="850" placeholder="720" required />
+              <input type="number" name="creditScore" min="300" max="850" placeholder="720" ${isViewOnly ? 'disabled readonly' : 'required'} />
             </label>
             <label>
               <span>Annual income ($)</span>
-              <input type="number" name="annualIncome" min="0" step="1000" placeholder="85000" required />
+              <input type="number" name="annualIncome" min="0" step="1000" placeholder="85000" ${isViewOnly ? 'disabled readonly' : 'required'} />
             </label>
           </div>
 
-          <button type="submit" class="primary-button">Create customer</button>
+          <button type="submit" class="primary-button ${isViewOnly ? 'disabled-control' : ''}" ${isViewOnly ? 'disabled' : ''}>
+            ${isViewOnly ? 'Create customer (Disabled in View Only)' : 'Create customer'}
+          </button>
         </form>
       </div>
 
@@ -848,12 +1004,13 @@ function renderApp(): void {
   };
 
   const header = titles[state.currentView];
+  const isViewOnly = state.isViewOnly;
 
   root.innerHTML = `
-    <div class="dashboard-shell">
+    <div class="dashboard-shell ${isViewOnly ? 'is-view-only' : ''}">
       <aside class="sidebar">
         <div class="brand-block">
-          <p class="eyebrow">Risk API</p>
+          <p class="eyebrow">${isViewOnly ? 'Preview Mode' : 'Risk API'}</p>
           <h2>Control Center</h2>
         </div>
 
@@ -861,10 +1018,10 @@ function renderApp(): void {
           <button type="button" class="nav-item ${state.currentView === 'dashboard' ? 'active' : ''}" data-view="dashboard">
             Dashboard
           </button>
-          <button type="button" class="nav-item ${state.currentView === 'customers' ? 'active' : ''}" data-view="customers">
+          <button type="button" class="nav-item ${isViewOnly ? 'disabled-nav' : ''} ${state.currentView === 'customers' ? 'active' : ''}" ${isViewOnly ? 'disabled title="Disabled in view-only mode"' : 'data-view="customers"'}>
             Customers
           </button>
-          <button type="button" class="nav-item ${state.currentView === 'reports' ? 'active' : ''}" data-view="reports">
+          <button type="button" class="nav-item ${isViewOnly ? 'disabled-nav' : ''} ${state.currentView === 'reports' ? 'active' : ''}" ${isViewOnly ? 'disabled title="Disabled in view-only mode"' : 'data-view="reports"'}>
             Reports
           </button>
         </nav>
@@ -873,26 +1030,40 @@ function renderApp(): void {
       <main class="content-panel">
         <header class="topbar">
           <div>
-            <p class="eyebrow alt">${header.eyebrow}</p>
+            <p class="eyebrow alt">${isViewOnly ? 'Read-Only Preview' : header.eyebrow}</p>
             <h1>${header.title}</h1>
           </div>
-          <button id="logout-button" class="secondary-button" type="button">Logout</button>
+          <button id="logout-button" class="secondary-button" type="button">
+            ${isViewOnly ? 'Exit View Only' : 'Logout'}
+          </button>
         </header>
 
         ${state.currentView === 'dashboard' ? renderDashboardView() : ''}
-        ${state.currentView === 'customers' ? renderCustomersView() : ''}
-        ${state.currentView === 'reports' ? renderReportsView() : ''}
+        ${!isViewOnly && state.currentView === 'customers' ? renderCustomersView() : ''}
+        ${!isViewOnly && state.currentView === 'reports' ? renderReportsView() : ''}
       </main>
     </div>
 
-    ${renderEditModal()}
-    ${renderAddModal()}
+    ${!isViewOnly ? renderEditModal() : ''}
+    ${!isViewOnly ? renderAddModal() : ''}
   `;
 
   bindEvents();
 }
 
 function bindEvents(): void {
+  // If in View-Only mode, nothing is responsive! Only exit back to login is active.
+  if (state.isViewOnly) {
+    const exitButton = root.querySelector<HTMLButtonElement>('#logout-button');
+    exitButton?.addEventListener('click', () => {
+      state.isViewOnly = false;
+      state.customers = [];
+      state.assessments = [];
+      renderLogin();
+    });
+    return;
+  }
+
   // Navigation switching
   root.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((button) => {
     button.addEventListener('click', () => {
@@ -908,6 +1079,7 @@ function bindEvents(): void {
   const logoutButton = root.querySelector<HTMLButtonElement>('#logout-button');
   logoutButton?.addEventListener('click', () => {
     setToken('');
+    state.isViewOnly = false;
     renderLogin();
   });
 
