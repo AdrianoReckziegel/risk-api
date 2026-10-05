@@ -33,7 +33,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000,http://app.adreck.ca,https://app.adreck.ca,http://app.adreck.com,https://app.adreck.com}")
+    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000,http://app.adreck.ca,https://app.adreck.ca}")
     private String allowedOrigins;
 
     @Bean

@@ -11,8 +11,7 @@
 
 > ## 🌟 Live Demo Spotlight
 >
-> ### 🔗 [https://app.adreck.com](https://app.adreck.com)
-> *(Alternative mirror: [https://app.adreck.ca](https://app.adreck.ca))*
+> ### 🔗 [https://app.adreck.ca](https://app.adreck.ca)
 >
 > **For Reviewers & Recruiters:**
 > - **Instant Evaluation**: Click **"Access as View Only"** on the login screen to immediately explore the live dashboard, interactive customer records, risk distributions, reports, and analytics without requiring login credentials.
@@ -226,15 +225,15 @@ Run all unit and integration tests:
 
 ### Reverse Proxy & Nginx Proxy Manager Setup
 To host the frontend with Nginx Proxy Manager:
-- **Domain Names**: `app.adreck.com`, `app.adreck.ca`
+- **Domain Name**: `app.adreck.ca`
 - **Forward Scheme**: `http`
 - **Forward Hostname**: `risk-frontend`
 - **Forward Port**: `80`
 - **SSL**: Enable Let's Encrypt Certificate with Force SSL.
 
-Ensure `CORS_ALLOWED_ORIGINS` in your environment includes your domains:
+Ensure `CORS_ALLOWED_ORIGINS` in your environment includes your domain:
 ```env
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://app.adreck.com,https://app.adreck.com,http://app.adreck.ca,https://app.adreck.ca
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://app.adreck.ca,https://app.adreck.ca
 ```
 
 ---
@@ -257,6 +256,5 @@ Every push to the `main` branch automatically triggers GitHub Actions:
 **Adriano Reckziegel**  
 Software Developer specializing in Enterprise Java, Spring Boot, and Financial Systems.
 
-- **Live Application**: [https://app.adreck.com](https://app.adreck.com)
-- **Portfolio**: [https://adreck.ca](https://adreck.ca)
+- **Live Application**: [https://app.adreck.ca](https://app.adreck.ca)
 - **GitHub**: [https://github.com/AdrianoReckziegel](https://github.com/AdrianoReckziegel)
