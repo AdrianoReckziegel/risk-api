@@ -63,6 +63,46 @@ public class EmailService {
         }
     }
 
+    public void sendVisitorAlert(String eventType, String referrer, String location, String device, String ip) {
+        String eventLabel = "VIEW_ONLY_ACCESS".equalsIgnoreCase(eventType)
+                ? "Recruiter / Visitor accessed View-Only Mode"
+                : "New visitor landed on portal";
+
+        String subject = "[Risk Portal Alert] " + eventLabel;
+        String body = String.format(
+                "A visitor has accessed your Risk Assessment Portal:\n\n" +
+                "• Activity:    %s\n" +
+                "• Source:      %s\n" +
+                "• Inferred Loc: %s\n" +
+                "• Device:      %s\n" +
+                "• IP / Host:   %s\n" +
+                "• Timestamp:   %s\n",
+                eventLabel,
+                referrer != null ? referrer : "Direct Navigation",
+                location != null ? location : "Unknown",
+                device != null ? device : "Unknown",
+                ip != null ? ip : "Unknown",
+                Instant.now()
+        );
+
+        if (mailSender != null && fromAddress != null && !fromAddress.isBlank()) {
+            try {
+                SimpleMailMessage message = new SimpleMailMessage();
+                message.setFrom(fromAddress);
+                message.setTo(recipient);
+                message.setSubject(subject);
+                message.setText(body);
+                mailSender.send(message);
+                log.info("Visitor alert email sent successfully to {}", recipient);
+                return;
+            } catch (Exception ex) {
+                log.error("Failed to send visitor alert email to {}: {}", recipient, ex.getMessage());
+            }
+        } else {
+            log.info("Visitor alert notification logged:\nRecipient: {}\nSubject: {}\n{}", recipient, subject, body);
+        }
+    }
+
     public String getRecipient() {
         return recipient;
     }

@@ -787,4 +787,107 @@ small {
   user-select: none;
 }
 
+/* Visitor Analytics & Recruiter Radar Styles */
+.source-pill {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.source-pill.linkedin {
+  background: #0a66c2;
+  color: #ffffff;
+}
+
+.source-pill.github {
+  background: rgba(168, 85, 247, 0.2);
+  color: #e9d5ff;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.source-pill.portfolio {
+  background: rgba(56, 189, 248, 0.18);
+  color: #9fe7ff;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.source-pill.google {
+  background: rgba(234, 67, 53, 0.18);
+  color: #fca5a5;
+  border: 1px solid rgba(234, 67, 53, 0.3);
+}
+
+.source-pill.direct {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.event-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.event-pill.view_only_access {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.event-pill.page_view {
+  background: rgba(56, 189, 248, 0.12);
+  color: #bae6fd;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.recruiter-alert-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(15, 23, 42, 0.85));
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 16px;
+  padding: 16px 22px;
+  margin-bottom: 22px;
+}
+
+.recruiter-alert-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.recruiter-radar-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recruiter-alert-info h4 {
+  margin: 0 0 4px;
+  color: #f0f9ff;
+  font-size: 1rem;
+}
+
+.recruiter-alert-info p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.86rem;
+}
+
+
 

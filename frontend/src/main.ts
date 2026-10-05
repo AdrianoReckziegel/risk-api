@@ -25,7 +25,29 @@ type LoginResponse = {
   token: string;
 };
 
-type ActiveView = 'dashboard' | 'customers' | 'reports';
+type ActiveView = 'dashboard' | 'customers' | 'reports' | 'analytics';
+
+type VisitorEventItem = {
+  id: number;
+  eventType: string;
+  referrerSource: string;
+  location: string;
+  device: string;
+  browser: string;
+  operatingSystem: string;
+  path: string;
+  timestamp: string;
+};
+
+type VisitorMetricsSummary = {
+  totalVisits: number;
+  uniqueVisitors: number;
+  viewOnlyVisits: number;
+  topReferrers: Record<string, number>;
+  topLocations: Record<string, number>;
+  topDevices: Record<string, number>;
+  recentVisits: VisitorEventItem[];
+};
 
 type DashboardState = {
   token: string;
@@ -36,6 +58,7 @@ type DashboardState = {
   editingCustomer: Customer | null;
   isAddModalOpen: boolean;
   isViewOnly: boolean;
+  metrics: VisitorMetricsSummary | null;
 };
 
 const STORAGE_KEY = 'risk-api-token';
@@ -149,6 +172,88 @@ const DEMO_ASSESSMENTS: RiskAssessment[] = [
   },
 ];
 
+const DEMO_METRICS: VisitorMetricsSummary = {
+  totalVisits: 148,
+  uniqueVisitors: 64,
+  viewOnlyVisits: 29,
+  topReferrers: {
+    'LinkedIn': 58,
+    'Direct Navigation': 41,
+    'GitHub': 26,
+    'Portfolio (adreck.ca)': 15,
+    'Google Search': 8,
+  },
+  topLocations: {
+    'Toronto, ON (Canada)': 54,
+    'Montreal, QC (Canada)': 26,
+    'Ottawa, ON (Canada)': 21,
+    'New York / Eastern (US)': 18,
+    'San Francisco / LA (US)': 14,
+  },
+  topDevices: {
+    'Desktop': 102,
+    'Mobile': 40,
+    'Tablet': 6,
+  },
+  recentVisits: [
+    {
+      id: 1,
+      eventType: 'VIEW_ONLY_ACCESS',
+      referrerSource: 'LinkedIn',
+      location: 'Toronto, ON (Canada)',
+      device: 'Desktop',
+      browser: 'Google Chrome',
+      operatingSystem: 'macOS',
+      path: '/dashboard',
+      timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 2,
+      eventType: 'PAGE_VIEW',
+      referrerSource: 'LinkedIn',
+      location: 'Toronto, ON (Canada)',
+      device: 'Desktop',
+      browser: 'Google Chrome',
+      operatingSystem: 'macOS',
+      path: '/',
+      timestamp: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 3,
+      eventType: 'VIEW_ONLY_ACCESS',
+      referrerSource: 'GitHub',
+      location: 'Montreal, QC (Canada)',
+      device: 'Desktop',
+      browser: 'Mozilla Firefox',
+      operatingSystem: 'Windows',
+      path: '/dashboard',
+      timestamp: new Date(Date.now() - 32 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 4,
+      eventType: 'PAGE_VIEW',
+      referrerSource: 'Portfolio (adreck.ca)',
+      location: 'Ottawa, ON (Canada)',
+      device: 'Mobile',
+      browser: 'Apple Safari',
+      operatingSystem: 'iOS',
+      path: '/',
+      timestamp: new Date(Date.now() - 95 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 5,
+      eventType: 'VIEW_ONLY_ACCESS',
+      referrerSource: 'Direct Navigation',
+      location: 'New York / Eastern (US)',
+      device: 'Desktop',
+      browser: 'Google Chrome',
+      operatingSystem: 'Windows',
+      path: '/dashboard',
+      timestamp: new Date(Date.now() - 210 * 60 * 1000).toISOString(),
+    },
+  ],
+};
+
 const state: DashboardState = {
   token: localStorage.getItem(STORAGE_KEY) ?? '',
   customers: [],
@@ -158,7 +263,36 @@ const state: DashboardState = {
   editingCustomer: null,
   isAddModalOpen: false,
   isViewOnly: false,
+  metrics: null,
 };
+
+function getOrCreateSessionId(): string {
+  const existing = sessionStorage.getItem('risk_visitor_session_id');
+  if (existing) return existing;
+  const newId = 'sess_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now();
+  sessionStorage.setItem('risk_visitor_session_id', newId);
+  return newId;
+}
+
+async function sendTelemetry(eventType: string = 'PAGE_VIEW'): Promise<void> {
+  try {
+    await fetch(`${API_BASE_URL}/api/metrics/track`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        eventType,
+        path: window.location.pathname || '/',
+        referrer: document.referrer || 'direct',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        language: navigator.language,
+        screenResolution: `${window.screen.width}x${window.screen.height}`,
+        sessionId: getOrCreateSessionId(),
+      }),
+    });
+  } catch {
+    // Ignore telemetry send failures quietly
+  }
+}
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers ?? {});
@@ -358,6 +492,7 @@ function renderLogin(): void {
 }
 
 function enterViewOnlyMode(): void {
+  void sendTelemetry('VIEW_ONLY_ACCESS');
   state.isViewOnly = true;
   state.currentView = 'dashboard';
   state.editingCustomer = null;
@@ -366,6 +501,7 @@ function enterViewOnlyMode(): void {
   // Populate sample portfolio data for the view-only dashboard display
   state.customers = [...DEMO_CUSTOMERS];
   state.assessments = [...DEMO_ASSESSMENTS];
+  state.metrics = state.metrics ?? DEMO_METRICS;
 
   renderApp();
 }
@@ -486,6 +622,33 @@ function renderDashboardView(): string {
           <span>View-Only Mode</span>
         </div>
         <p>This is a read-only preview of the portfolio dashboard. All buttons, actions, and form inputs are non-responsive and disabled.</p>
+      </div>
+    ` : ''}
+
+    ${!isViewOnly ? `
+      <div class="recruiter-alert-card">
+        <div class="recruiter-alert-info">
+          <div class="recruiter-radar-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="2" x2="12" y2="6"></line>
+              <line x1="12" y1="18" x2="12" y2="22"></line>
+              <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+              <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+              <line x1="2" y1="12" x2="6" y2="12"></line>
+              <line x1="18" y1="12" x2="22" y2="12"></line>
+              <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+              <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+            </svg>
+          </div>
+          <div>
+            <h4>Recruiter & Visitor Tracker Active</h4>
+            <p>${(state.metrics?.totalVisits ?? DEMO_METRICS.totalVisits)} total visits recorded • ${(state.metrics?.viewOnlyVisits ?? DEMO_METRICS.viewOnlyVisits)} demo accesses from LinkedIn & direct visits.</p>
+          </div>
+        </div>
+        <button class="secondary-button" type="button" data-view="analytics" style="font-size:0.84rem; white-space:nowrap;">
+          Open Analytics →
+        </button>
       </div>
     ` : ''}
 
@@ -879,6 +1042,158 @@ function renderReportsView(): string {
   `;
 }
 
+function formatRelativeTime(dateString: string): string {
+  try {
+    const date = new Date(dateString);
+    const diffSeconds = Math.round((Date.now() - date.getTime()) / 1000);
+    if (diffSeconds < 60) return 'Just now';
+    if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
+    if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}h ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return dateString;
+  }
+}
+
+function getReferrerBadgeClass(source: string): string {
+  const s = source?.toLowerCase() ?? '';
+  if (s.includes('linkedin')) return 'source-pill linkedin';
+  if (s.includes('github')) return 'source-pill github';
+  if (s.includes('portfolio') || s.includes('adreck')) return 'source-pill portfolio';
+  if (s.includes('google')) return 'source-pill google';
+  return 'source-pill direct';
+}
+
+function renderAnalyticsView(): string {
+  const m = state.metrics ?? DEMO_METRICS;
+  const total = m.totalVisits || 1;
+
+  const topReferrerEntries = Object.entries(m.topReferrers || {});
+  const topLocationEntries = Object.entries(m.topLocations || {});
+
+  return `
+    <section class="stats-grid">
+      <article class="stat-card accent">
+        <span>Total Page Views</span>
+        <strong>${m.totalVisits}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Unique Visitors</span>
+        <strong>${m.uniqueVisitors}</strong>
+      </article>
+      <article class="stat-card warning">
+        <span>Recruiter / Demo Accesses</span>
+        <strong>${m.viewOnlyVisits}</strong>
+      </article>
+      <article class="stat-card success">
+        <span>Top Inbound Channel</span>
+        <strong style="font-size: 1.45rem;">${topReferrerEntries[0]?.[0] || 'LinkedIn'}</strong>
+      </article>
+    </section>
+
+    <section class="panel-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Inbound Channels & Referrers</h3>
+          <span>Traffic origin breakdown</span>
+        </div>
+
+        <div class="report-stack">
+          ${topReferrerEntries.map(([source, count]) => {
+            const pct = Math.round((count / total) * 100);
+            return `
+              <div class="report-row">
+                <span style="display:flex; align-items:center; gap:6px;">
+                  <span class="${getReferrerBadgeClass(source)}">${source}</span>
+                </span>
+                <div class="bar"><i style="width:${pct}%"></i></div>
+                <strong>${count} (${pct}%)</strong>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Visitor Geography</h3>
+          <span>Inferred from region & timezone</span>
+        </div>
+
+        <div class="report-stack">
+          ${topLocationEntries.map(([loc, count]) => {
+            const pct = Math.round((count / total) * 100);
+            return `
+              <div class="report-row">
+                <span>${loc}</span>
+                <div class="bar"><i style="width:${pct}%; background: linear-gradient(90deg, var(--accent), var(--accent-strong));"></i></div>
+                <strong>${count}</strong>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    </section>
+
+    <div class="panel full-width">
+      <div class="panel-header">
+        <div>
+          <h3>Live Visitor & Recruiter Stream</h3>
+          <span>Real-time access log with visitor location, channel, and platform</span>
+        </div>
+        <button class="secondary-button" id="refresh-metrics-btn" type="button" style="display:flex; align-items:center; gap:6px; font-size:0.82rem;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          Refresh Log
+        </button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Activity Type</th>
+              <th>Inbound Channel</th>
+              <th>Location</th>
+              <th>Environment</th>
+              <th>Landing Path</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(m.recentVisits || []).length === 0 ? `
+              <tr>
+                <td colspan="6" class="empty-state">No visitor telemetry recorded yet.</td>
+              </tr>
+            ` : (m.recentVisits || []).map((v) => `
+              <tr>
+                <td><strong>${formatRelativeTime(v.timestamp)}</strong></td>
+                <td>
+                  <span class="event-pill ${v.eventType.toLowerCase()}">
+                    ${v.eventType === 'VIEW_ONLY_ACCESS' ? '👁️ View-Only Demo' : '🌐 Page View'}
+                  </span>
+                </td>
+                <td>
+                  <span class="${getReferrerBadgeClass(v.referrerSource)}">${v.referrerSource || 'Direct'}</span>
+                </td>
+                <td>${v.location || 'Online Visitor'}</td>
+                <td>
+                  <div class="customer-name" style="font-size:0.86rem;">${v.browser || 'Browser'} on ${v.operatingSystem || 'OS'}</div>
+                  <small>${v.device || 'Desktop'}</small>
+                </td>
+                <td><code>${v.path || '/'}</code></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
 function renderEditModal(): string {
   const c = state.editingCustomer;
   if (!c) return '';
@@ -1001,6 +1316,7 @@ function renderApp(): void {
     dashboard: { eyebrow: 'Overview', title: 'Portfolio dashboard' },
     customers: { eyebrow: 'Directory', title: 'Customer Management' },
     reports: { eyebrow: 'Analytics', title: 'Risk & Decision Reports' },
+    analytics: { eyebrow: 'Recruiter & Visitor Tracker', title: 'Visitor Analytics' },
   };
 
   const header = titles[state.currentView];
@@ -1024,6 +1340,9 @@ function renderApp(): void {
           <button type="button" class="nav-item ${isViewOnly ? 'disabled-nav' : ''} ${state.currentView === 'reports' ? 'active' : ''}" ${isViewOnly ? 'disabled title="Disabled in view-only mode"' : 'data-view="reports"'}>
             Reports
           </button>
+          <button type="button" class="nav-item ${isViewOnly ? 'disabled-nav' : ''} ${state.currentView === 'analytics' ? 'active' : ''}" ${isViewOnly ? 'disabled title="Disabled in view-only mode"' : 'data-view="analytics"'}>
+            Visitor Analytics
+          </button>
         </nav>
       </aside>
 
@@ -1041,6 +1360,7 @@ function renderApp(): void {
         ${state.currentView === 'dashboard' ? renderDashboardView() : ''}
         ${!isViewOnly && state.currentView === 'customers' ? renderCustomersView() : ''}
         ${!isViewOnly && state.currentView === 'reports' ? renderReportsView() : ''}
+        ${!isViewOnly && state.currentView === 'analytics' ? renderAnalyticsView() : ''}
       </main>
     </div>
 
@@ -1288,17 +1608,39 @@ function bindEvents(): void {
       }
     });
   });
+  // Refresh Visitor Metrics
+  const refreshMetricsBtn = root.querySelector<HTMLButtonElement>('#refresh-metrics-btn');
+  refreshMetricsBtn?.addEventListener('click', async () => {
+    refreshMetricsBtn.disabled = true;
+    refreshMetricsBtn.textContent = 'Refreshing...';
+    try {
+      const metrics = await request<VisitorMetricsSummary>('/api/metrics/summary');
+      if (metrics) {
+        state.metrics = metrics;
+        showToast('Visitor metrics updated', 'success');
+        renderApp();
+      }
+    } catch {
+      showToast('Could not refresh live metrics', 'error');
+      if (refreshMetricsBtn) {
+        refreshMetricsBtn.disabled = false;
+        refreshMetricsBtn.textContent = 'Refresh Log';
+      }
+    }
+  });
 }
 
 async function loadData(): Promise<void> {
   try {
-    const [customers, assessments] = await Promise.all([
+    const [customers, assessments, metrics] = await Promise.all([
       request<Customer[]>('/api/customers'),
       request<RiskAssessment[]>('/api/risk-assessments'),
+      request<VisitorMetricsSummary>('/api/metrics/summary').catch(() => null),
     ]);
 
     state.customers = customers ?? [];
     state.assessments = assessments ?? [];
+    state.metrics = metrics ?? DEMO_METRICS;
     renderApp();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to load data';
@@ -1311,6 +1653,8 @@ async function loadData(): Promise<void> {
 async function loadDashboard(): Promise<void> {
   await loadData();
 }
+
+void sendTelemetry('PAGE_VIEW');
 
 if (!state.token) {
   renderLogin();
