@@ -63,6 +63,7 @@ type DashboardState = {
 
 const STORAGE_KEY = 'risk-api-token';
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL ?? 'adrianoreck@gmail.com').trim();
 const appRoot = document.querySelector<HTMLDivElement>('#app') as HTMLDivElement | null;
 
 if (!appRoot) {
@@ -513,7 +514,7 @@ function renderRequestAccess(): void {
         <p class="eyebrow">Account Clearance</p>
         <h1>Request Access</h1>
         <p class="subtitle" id="request-subtitle">
-          Submit your email and the reason for access. Your request will be reviewed by an administrator.
+          Submit your details to generate a clearance request email to the administrator.
         </p>
 
         <form id="request-access-form" class="stacked-form">
@@ -557,31 +558,37 @@ function renderRequestAccess(): void {
     const submitBtn = root.querySelector<HTMLButtonElement>('#submit-access-btn');
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Sending...';
+      submitBtn.textContent = 'Preparing email...';
     }
 
+    const mailSubject = encodeURIComponent(`[Risk Portal] Access Request: ${name ? `${name} (${email})` : email}`);
+    const mailBody = encodeURIComponent(
+      `Hello Adriano,\n\nI am requesting administrative access to the Risk Assessment Portal.\n\n• Requester Name:  ${name || 'Not provided'}\n• Requester Email: ${email}\n• Reason for Access:\n${reason}\n\nThank you!`
+    );
+    const mailtoUrl = `mailto:${ADMIN_EMAIL}?subject=${mailSubject}&body=${mailBody}`;
+
+    // Optionally notify the backend (non-blocking)
     try {
       await request<{ message: string }>('/api/auth/request-access', {
         method: 'POST',
         body: JSON.stringify({ name, email, reason }),
       });
-
-      renderAccessRequestSuccess(email);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to submit request';
-      const statusText = root.querySelector<HTMLParagraphElement>('#request-subtitle');
-      if (statusText) {
-        statusText.innerHTML = `<span class="error-text">${message}</span>`;
-      }
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Request';
-      }
+    } catch {
+      // Ignored: client-side mailto is primary
     }
+
+    // Attempt to open email client directly
+    try {
+      window.location.href = mailtoUrl;
+    } catch {
+      // Handled via button on success screen
+    }
+
+    renderAccessRequestSuccess(email, mailtoUrl);
   });
 }
 
-function renderAccessRequestSuccess(requesterEmail: string): void {
+function renderAccessRequestSuccess(requesterEmail: string, mailtoUrl: string): void {
   root.innerHTML = `
     <div class="auth-shell">
       <div class="auth-card success-state">
@@ -590,13 +597,18 @@ function renderAccessRequestSuccess(requesterEmail: string): void {
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </div>
-        <p class="eyebrow alt">Request Dispatched</p>
+        <p class="eyebrow alt">Request Ready</p>
         <h1>Access Requested</h1>
         <p class="subtitle">
-          Your request for <strong>${requesterEmail}</strong> has been submitted to the administrator for review.
+          Your email application was triggered with a pre-filled clearance request for <strong>${requesterEmail}</strong> addressed to <strong>${ADMIN_EMAIL}</strong>.
         </p>
 
-        <button type="button" class="primary-button" id="return-to-login-btn" style="width: 100%; margin-top: 24px;">Return to Login</button>
+        <div class="direct-email-box">
+          <p>If your email client didn't open automatically, click below to send:</p>
+          <a class="primary-button mailto-link" href="${mailtoUrl}">Open in Email Client</a>
+        </div>
+
+        <button type="button" class="secondary-button" id="return-to-login-btn" style="width: 100%; margin-top: 16px;">Return to Login</button>
       </div>
     </div>
   `;
