@@ -677,28 +677,6 @@ small {
  justify-content: center;
 }
 
-.direct-email-box {
- margin-top: 20px;
- padding: 16px;
- background: rgba(19, 38, 63, 0.6);
- border: 1px dashed rgba(56, 189, 248, 0.35);
- border-radius: 14px;
- text-align: center;
-}
-
-.direct-email-box p {
- margin: 0 0 12px;
- font-size: 0.85rem;
- color: var(--muted);
-}
-
-.mailto-link {
- display: inline-flex;
- align-items: center;
- justify-content: center;
- text-decoration: none;
- width: 100%;
-}
 
 
 /* View-Only Demo Mode Styles */

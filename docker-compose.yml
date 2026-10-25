@@ -46,7 +46,7 @@ services:
       context: ./frontend
       args:
         VITE_API_BASE_URL: https://api.adreck.ca
-        VITE_ADMIN_EMAIL: ${VITE_ADMIN_EMAIL:-adrianoreck@gmail.com}
+        VITE_ADMIN_EMAIL: ${VITE_ADMIN_EMAIL:-info@adreck.ca}
     container_name: risk-frontend
     restart: always
     depends_on:
@@ -55,7 +55,7 @@ services:
       - "80"
     environment:
       VITE_API_BASE_URL: https://api.adreck.ca
-      VITE_ADMIN_EMAIL: ${VITE_ADMIN_EMAIL:-adrianoreck@gmail.com}
+      VITE_ADMIN_EMAIL: ${VITE_ADMIN_EMAIL:-info@adreck.ca}
     networks:
       - default
       - proxy

@@ -16,7 +16,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${app.mail.access-request-recipient:adrianoreck@gmail.com}")
+    @Value("${app.mail.access-request-recipient:info@adreck.ca}")
     private String recipient;
 
     @Value("${spring.mail.username:}")
