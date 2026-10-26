@@ -30,6 +30,8 @@ html, body, #app {
  margin: 0;
  min-height: 100%;
  min-height: 100vh;
+ max-width: 100%;
+ overflow-x: hidden;
  background: linear-gradient(180deg, #081321 0%, #0d1728 100%);
  color: #e5edf7;
 }
@@ -150,8 +152,10 @@ button {
 
 .dashboard-shell {
  display: grid;
- grid-template-columns: 240px 1fr;
+ grid-template-columns: 240px minmax(0, 1fr);
  min-height: 100vh;
+ min-width: 0;
+ max-width: 100%;
 }
 
 .sidebar {
@@ -201,6 +205,8 @@ button {
 
 .content-panel {
  padding: 26px;
+ min-width: 0;
+ max-width: 100%;
 }
 
 .topbar {
@@ -322,18 +328,36 @@ small {
 
 .report-row {
  display: grid;
- grid-template-columns: 50px 1fr 36px;
+ grid-template-columns: minmax(70px, max-content) 1fr auto;
  align-items: center;
- gap: 12px;
+ gap: 14px;
  color: #edf7ff;
+}
+
+.report-row span {
+ font-size: 0.88rem;
+ font-weight: 500;
+ white-space: nowrap;
+ overflow: hidden;
+ text-overflow: ellipsis;
+}
+
+.report-row strong {
+ font-size: 0.88rem;
+ font-variant-numeric: tabular-nums;
+ white-space: nowrap;
+ text-align: right;
+ color: #f1f5f9;
 }
 
 .bar {
  width: 100%;
+ min-width: 60px;
  height: 10px;
  border-radius: 999px;
  background: rgba(148, 163, 184, 0.18);
  overflow: hidden;
+ box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .bar i {
@@ -341,6 +365,7 @@ small {
  height: 100%;
  border-radius: inherit;
  background: linear-gradient(90deg, var(--accent), var(--success));
+ transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .risk-pill {
@@ -393,6 +418,47 @@ small {
  .bottom-grid,
  .field-row {
    grid-template-columns: 1fr;
+ }
+}
+
+@media (max-width: 640px) {
+ .content-panel {
+   padding: 16px;
+ }
+
+ .stats-grid {
+   grid-template-columns: repeat(2, 1fr);
+   gap: 12px;
+ }
+
+ .stat-card {
+   padding: 14px;
+   border-radius: 14px;
+ }
+
+ .stat-card strong {
+   font-size: 1.5rem;
+ }
+
+ .topbar {
+   flex-direction: column;
+   align-items: flex-start;
+   gap: 12px;
+ }
+
+ .recruiter-alert-card {
+   flex-direction: column;
+   align-items: flex-start;
+ }
+
+ .report-row {
+   grid-template-columns: minmax(60px, auto) 1fr auto;
+   gap: 10px;
+ }
+
+ .report-row span,
+ .report-row strong {
+   font-size: 0.8rem;
  }
 }
 
